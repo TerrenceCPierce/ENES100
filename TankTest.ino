@@ -3,7 +3,7 @@
 #include "Tank.h"
 
 //global 
-float const tht_tol = .1;
+float const tht_tol = .05;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const condTol = 2;
@@ -36,6 +36,7 @@ Servo myservo; // initializes servo object
 void setup() {
   // put your setup code here, to run once:
   //pin setup
+  
   Tank.begin();
   pinMode(motor1Pow, OUTPUT);
   pinMode(motor1Dir, OUTPUT);
@@ -67,9 +68,12 @@ void setup() {
 }
 
 void loop() {
-  forward();
-  delay(500);
-  stopMotors();
+  // forward();
+  // delay(500);
+  // stopMotors();
+  // delay(500);
+
+  mission();
 }
 
 void straight(float x_dest, float y_dest){
@@ -94,46 +98,77 @@ void straight(float x_dest, float y_dest){
   }
 }
 
-void turn(int desired_tht){
+void turn(float desired_tht){
   Enes100.updateLocation(); //get location
   float tht = Enes100.location.theta;
   while(abs(desired_tht-tht) > tht_tol){ //while angle is far away
+
     float diff_tht = desired_tht-tht;
     if (desired_tht> tht){
-      if(diff_tht >= pi) 
-        turnRight(int((2*pi-diff_tht)/turnTimeTol)); //turn a smaller amount if difference is greater (closer, just on other side of discontinuity)
-      else if(diff_tht < pi)
-        turnLeft(int(diff_tht/turnTimeTol)); //turn a larger amount if difference is greater (farther)
+      if(diff_tht >= pi){
+        //Enes100.println("Case 1");
+        turnRight(); //turn a smaller amount if difference is greater (closer, just on other side of discontinuity)
+    }
+      else if(diff_tht < pi){
+        //Enes100.println("Case 2");
+        turnLeft(); //turn a larger amount if difference is greater (farther)
+      }
     }
     else{
-      if(diff_tht <= pi) 
-        turnRight(int(diff_tht/turnTimeTol)); //turn a larger amount if difference is greater (farther)
-      else if(diff_tht > pi)
-        turnLeft(int((2*pi-diff_tht)/turnTimeTol)); //turn a smaller amount if difference is greater (closer, just on other side of discontinuity)
-    }
-  Enes100.updateLocation(); //get location
-  tht = Enes100.location.theta;  
-  }
-}
+      if(diff_tht <= pi){ 
+        //Enes100.println("Case 3");
+        turnRight(); //turn a larger amount if difference is greater (farther)
 
-void turnRight(int time){
-  //Left wheels CCW, Right wheels CW
-  motor1(1);
-  motor2(0);
-  delay(50*time);
+      }
+      else if(diff_tht > pi){
+        //Enes100.println("Case 4");
+        turnLeft(); //turn a smaller amount if difference is greater (closer, just on other side of discontinuity)
+
+      }
+    }
+
+  
+  Enes100.updateLocation(); //get location
+  tht = Enes100.location.theta;
+  //delay(100);
+  stopMotors();
+  delay(200);
+  //Enes100.println(tht);
+  }
   stopMotors();
 }
 
-void turnLeft(int time){
+void turnRight(float time){
+  //Left wheels CCW, Right wheels CW
+  motor1(1);
+  motor2(0);
+  delay(100*time);
+  stopMotors();
+  delay(100);
+}
+
+void turnRight(){
+  motor1(1);
+  motor2(0);
+
+}
+
+void turnLeft(float time){
   //Left wheels CW, Right wheels CCW
   motor1(0);
   motor2(1);
   delay(50*time);
   stopMotors();
+  delay(100);
+}
+
+void turnLeft(){
+  motor1(0);
+  motor2(1);
 }
 
 void motor1(int dir){ //0 is CW, 1 is CCW
-  if(dir == 0)
+  if(dir == 1)
     Tank.setLeftMotorPWM(pwm);
   else
     Tank.setLeftMotorPWM(-1*pwm);
@@ -148,7 +183,8 @@ void motor2(int dir){ //0 is CW, 1 is CCW
 }
 
 void stopMotors(){
-  Tank.turnOffMotors();
+  Tank.setLeftMotorPWM(0);
+  Tank.setRightMotorPWM(0);
 }
 
 void forward(){
