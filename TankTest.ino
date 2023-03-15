@@ -67,31 +67,9 @@ void setup() {
 }
 
 void loop() {
-  
-  // put your main code here, to run repeatedly:
-  Enes100.updateLocation(); //get location
-  float x = Enes100.location.x;
-  float y = Enes100.location.y;
-  float tht = Enes100.location.theta;
-  //Go to mission
-
-  while(getDist() > 10 && calcDist(x, missionX, y, missionY) > 10 ){
-  Enes100.print("entered while loop ");
-  straight(missionX, missionY);
-    Enes100.updateLocation();
-    x = Enes100.location.x;
-    y = Enes100.location.y;    
-  }
+  forward();
+  delay(500);
   stopMotors();
-  //Mission Code
-
-  //Traverse Obstacles
-
-  //Go under limbo
-
-  //Celebration
-
-
 }
 
 void straight(float x_dest, float y_dest){
@@ -163,7 +141,7 @@ void motor1(int dir){ //0 is CW, 1 is CCW
 }
 
 void motor2(int dir){ //0 is CW, 1 is CCW
-  if(dir == 0)
+  if(dir == 1)
     Tank.setRightMotorPWM(pwm);
   else
     Tank.setRightMotorPWM(-1*pwm);
@@ -203,6 +181,33 @@ bool getCond(){
   }
 }
 
+void mission(){
+  // put your main code here, to run repeatedly:
+  Enes100.updateLocation(); //get location
+  float x = Enes100.location.x;
+  float y = Enes100.location.y;
+  float tht = Enes100.location.theta;
+  //Go to mission
+
+  while(getDist() > 10 && calcDist(x, missionX, y, missionY) > 10 ){
+  Enes100.print("entered while loop ");
+  straight(missionX, missionY);
+    Enes100.updateLocation();
+    x = Enes100.location.x;
+    y = Enes100.location.y;    
+  }
+  stopMotors();
+  //Mission Code
+
+  //Traverse Obstacles
+
+  //Go under limbo
+
+  //Celebration
+
+
+
+}
 /*
 float getTheta(){
   float tht = Enes100.location.theta;
