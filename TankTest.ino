@@ -26,10 +26,12 @@ int const float1Pin = 1;
 int const float2Pin = 2;
 int const float3Pin = 3;
 int const photoPin = 4;
+
+int const aruco = 12;
 //will need to add LED to diagram and code
 
-float missionX = 1; 
-float missionY = 3;
+float missionX = .5; 
+float missionY = 1.5;
 
 Servo myservo; // initializes servo object
 
@@ -38,6 +40,7 @@ void setup() {
   //pin setup
   
   Tank.begin();
+  /*
   pinMode(motor1Pow, OUTPUT);
   pinMode(motor1Dir, OUTPUT);
   pinMode(motor2Pow, OUTPUT);
@@ -53,9 +56,10 @@ void setup() {
   pinMode(photoPin, INPUT);
   //Set up servo pin
   myservo.attach(servoPin);
+  */
 
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
-  Enes100.begin("Elephante", WATER, 13 , wifiTXPin, wifiRXPin);
+  Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
   Enes100.print("Destination is at (");
   Enes100.print(missionX);
   Enes100.print(", ");
