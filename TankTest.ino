@@ -9,6 +9,8 @@ float const tht_tol = .05;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const condTol = 2;
+float const distTol = 15;
+
 float const pwm = 255;
 int const straightTol = 250; //ms per stop when going straight
 float const obsHeight = .45; //meters
@@ -36,6 +38,10 @@ int const aruco = 10;
 
 float missionX = .5; 
 float missionY = 1.5;
+
+float obs1X = 1.6;
+
+float obs2X = 2.3;
 
 float limboX = 3.3;
 float limboY = 1.5;
@@ -249,7 +255,7 @@ void go2mission(){
   float tht = Enes100.location.theta;
   //Go to mission
 
-  while(getDist() > 10 && calcDist(x, missionX, y, missionY) > 10 ){
+  while(getDist() > distTol && calcDist(x, missionX, y, missionY) > distTol ){
   Enes100.print("entered while loop ");
   straight(missionX, missionY);
     Enes100.updateLocation();
@@ -277,17 +283,17 @@ void obstacles(){
   else
     des_tht = pi/2;
 
-  while(x < 1.5){
+  while(x < obs1X){
     turn(0);
     float USDist = getDist();
-    while(USDist > 10){
+    while(USDist > distTol){
       Enes100.updateLocation();
       x = Enes100.location.x;
       y = Enes100.location.y;
       straight(x+.1,y);
       USDist = getDist();
       Enes100.println(USDist);
-      if(USDist < 10){
+      if(USDist < distTol){
         Enes100.updateLocation();
         x = Enes100.location.x;
         y = Enes100.location.y;
@@ -301,7 +307,7 @@ void obstacles(){
     x = Enes100.location.x;
     y = Enes100.location.y;
     tht = Enes100.location.theta;
-    if(x < 1.5){
+    if(x < obs1X){
 
       //Enes100.println("Going down an obstacle height to " + String(y-obsHeight)+  "from" + String(y));
       float y1 = y;
@@ -313,7 +319,7 @@ void obstacles(){
         tht = Enes100.location.theta;
       }
       if(y <= missionY-1.8*obsHeight){ //last row change this to accomodate both starting positions
-        straight(1.6, y);
+        straight(obs1X + .1, y);
       }
     }
   }
@@ -323,10 +329,10 @@ void obstacles(){
   y = Enes100.location.y;
   tht = Enes100.location.theta;
 
-  while(x < 3){
+  while(x < obs2X){
     Enes100.println("Entered <3 while loop");
     float USDist = getDist();
-    while(USDist > 10 & x < 3){
+    while(USDist > distTol & x < obs2X){
       Enes100.updateLocation();
       x = Enes100.location.x;
       y = Enes100.location.y;
@@ -339,12 +345,12 @@ void obstacles(){
     x = Enes100.location.x;
     y = Enes100.location.y;
     tht = Enes100.location.theta;
-    if(x < 3){ //stopped because it detected an object
+    if(x < obs2X){ //stopped because it detected an object
       //Enes100.println("Going down an obstacle height to " + String(y-obsHeight)+  "from" + String(y));
-      if(obsCoord[0] > 1.5){ // turn in same direction as previous, no detected objects previously
-        Enes100.println("Entered <3 while loop if statement");
+      if(obsCoord[0] > obs1X){ // turn in same direction as previous, no detected objects previously
+        //Enes100.println("Entered <3 while loop if statement");
         float y1 = y;
-        while(calcDist(x,x,y,y1-obsHeight)>3){
+        while(calcDist(x,x,y,y1-obsHeight)>obs2X){
           straight(x,y1-obsHeight);
           Enes100.updateLocation();
           x = Enes100.location.x;
@@ -353,9 +359,9 @@ void obstacles(){
         }
       }
       else{ // turn in opposite direction
-        Enes100.println("Entered <3 while loop else statement");
+        //Enes100.println("Entered <3 while loop else statement");
         float y1 = y;
-        while(calcDist(x,x,y,y1+obsHeight)>3){
+        while(calcDist(x,x,y,y1+obsHeight)>obs2X){
           straight(x,y1+obsHeight);
           Enes100.updateLocation();
           x = Enes100.location.x;
@@ -375,7 +381,7 @@ void go2limbo(){
   float tht = Enes100.location.theta;
   //Go to limbo
 
-  while(getDist() > 10 && calcDist(x, limboX, y, limboY) > 10 ){
+  while(getDist() > distTol && calcDist(x, limboX, y, limboY) > distTol ){
   straight(limboX, limboY);
     Enes100.updateLocation();
     x = Enes100.location.x;
@@ -386,7 +392,7 @@ void go2limbo(){
 
 void limbo(){
   turn(0);
-  while(getDist() > 10){
+  while(getDist() > distTol){
     forward(); 
     delay(straightTol);
     stopMotors();
