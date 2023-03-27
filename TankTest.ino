@@ -31,11 +31,14 @@ int const float2Pin = 2;
 int const float3Pin = 3;
 int const photoPin = 4;
 
-int const aruco = 12;
+int const aruco = 10;
 //will need to add LED to diagram and code
 
 float missionX = .5; 
 float missionY = 1.5;
+
+float limboX = 3.3;
+float limboY = 1.5;
 
 Servo myservo; // initializes servo object
 
@@ -86,7 +89,10 @@ void loop() {
   mission();
   //Traverse Obstacles
   obstacles();
+  //Go to limbo
+  go2limbo();
   //Go under limbo
+  limbo();
 
   //Celebration
   Enes100.println("Finished Loop");
@@ -287,6 +293,7 @@ void obstacles(){
         y = Enes100.location.y;
         obsCoord[0] = x;
         obsCoord[1] = y;
+        Enes100.println("Detected Obstacle");
       }
     }
     stopMotors();
@@ -317,6 +324,7 @@ void obstacles(){
   tht = Enes100.location.theta;
 
   while(x < 3){
+    Enes100.println("Entered <3 while loop");
     float USDist = getDist();
     while(USDist > 10 & x < 3){
       Enes100.updateLocation();
@@ -333,7 +341,8 @@ void obstacles(){
     tht = Enes100.location.theta;
     if(x < 3){ //stopped because it detected an object
       //Enes100.println("Going down an obstacle height to " + String(y-obsHeight)+  "from" + String(y));
-      if(obsCoord[0] == 0){ // turn in same direction as previous, no detected objects previously
+      if(obsCoord[0] > 1.5){ // turn in same direction as previous, no detected objects previously
+        Enes100.println("Entered <3 while loop if statement");
         float y1 = y;
         while(calcDist(x,x,y,y1-obsHeight)>3){
           straight(x,y1-obsHeight);
@@ -344,6 +353,7 @@ void obstacles(){
         }
       }
       else{ // turn in opposite direction
+        Enes100.println("Entered <3 while loop else statement");
         float y1 = y;
         while(calcDist(x,x,y,y1+obsHeight)>3){
           straight(x,y1+obsHeight);
@@ -355,6 +365,33 @@ void obstacles(){
       }
     }
   }
+}
+
+void go2limbo(){
+  // put your main code here, to run repeatedly:
+  Enes100.updateLocation(); //get location
+  float x = Enes100.location.x;
+  float y = Enes100.location.y;
+  float tht = Enes100.location.theta;
+  //Go to limbo
+
+  while(getDist() > 10 && calcDist(x, limboX, y, limboY) > 10 ){
+  straight(limboX, limboY);
+    Enes100.updateLocation();
+    x = Enes100.location.x;
+    y = Enes100.location.y;    
+  }
+  stopMotors();
+}
+
+void limbo(){
+  turn(0);
+  while(getDist() > 10){
+    forward(); 
+    delay(straightTol);
+    stopMotors();
+  }
+  stopMotors();
 }
 /*
 float getTheta(){
