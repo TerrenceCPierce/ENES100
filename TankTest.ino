@@ -33,18 +33,21 @@ int const float2Pin = 2;
 int const float3Pin = 3;
 int const photoPin = 4;
 
-int const aruco = 10;
+int const aruco = 12;
 //will need to add LED to diagram and code
 
 float missionX = .5; 
 float missionY = 1.5;
 
-float obs1X = 1.6;
+float obs1X = 1.5;
 
-float obs2X = 2.3;
+float obs2X = 2.6;
 
 float limboX = 3.3;
 float limboY = 1.5;
+
+float finalX = 3.6;
+float finalY = 1.5;
 
 Servo myservo; // initializes servo object
 
@@ -113,6 +116,26 @@ void straight(float x_dest, float y_dest){
   float tht = Enes100.location.theta;
   float desired_tht = atan2((y_dest-y),(x_dest-x)); //angle we want to go
   //Enes100.println("Desired Theta: " + String(desired_tht));
+  if (abs(desired_tht - tht) > tht_tol){
+    turn(desired_tht);
+  }
+  forward(); 
+  delay(straightTol);
+  stopMotors();
+  Enes100.updateLocation(); //get location
+  x = Enes100.location.x;
+  y = Enes100.location.y;
+  tht = Enes100.location.theta;
+  if (abs(desired_tht-tht) > tht_tol){
+    turn(desired_tht); // readjust towards target
+  }
+}
+
+void straight(float desired_tht){
+  Enes100.updateLocation(); //get location
+  float x = Enes100.location.x;
+  float y = Enes100.location.y;
+  float tht = Enes100.location.theta;
   if (abs(desired_tht - tht) > tht_tol){
     turn(desired_tht);
   }
@@ -290,7 +313,7 @@ void obstacles(){
       Enes100.updateLocation();
       x = Enes100.location.x;
       y = Enes100.location.y;
-      straight(x+.1,y);
+      straight(0);
       USDist = getDist();
       Enes100.println(USDist);
       if(USDist < distTol){
@@ -308,11 +331,10 @@ void obstacles(){
     y = Enes100.location.y;
     tht = Enes100.location.theta;
     if(x < obs1X){
-
       //Enes100.println("Going down an obstacle height to " + String(y-obsHeight)+  "from" + String(y));
       float y1 = y;
       while(calcDist(x,x,y,y1-obsHeight)>3){
-        straight(x,y1-obsHeight);
+        straight(des_tht);
         Enes100.updateLocation();
         x = Enes100.location.x;
         y = Enes100.location.y;
@@ -392,10 +414,16 @@ void go2limbo(){
 
 void limbo(){
   turn(0);
-  while(getDist() > distTol){
+  Enes100.updateLocation(); //get location
+  float x = Enes100.location.x;
+  float y = Enes100.location.y;
+  while(getDist() > distTol && calcDist(x, finalX, y, finalY) > distTol){
     forward(); 
     delay(straightTol);
     stopMotors();
+    Enes100.updateLocation();
+    x = Enes100.location.x;
+    y = Enes100.location.y; 
   }
   stopMotors();
 }
