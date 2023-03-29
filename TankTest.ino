@@ -278,13 +278,21 @@ void go2mission(){
   float tht = Enes100.location.theta;
   //Go to mission
 
-  while(getDist() > distTol && calcDist(x, missionX, y, missionY) > distTol ){
-  Enes100.print("entered while loop ");
-  straight(missionX, missionY);
-    Enes100.updateLocation();
-    x = Enes100.location.x;
-    y = Enes100.location.y;    
+  if(y<1){
+    missionY = 1.5;
   }
+  else{
+    missionY = 0.5;    
+  }
+
+  while(getDist() > distTol && calcDist(x, missionX, y, missionY) > distTol ){
+  Enes100.print("entered while loop ");  
+  straight(missionX, missionY);
+     Enes100.updateLocation();
+     x = Enes100.location.x;
+     y = Enes100.location.y;
+  }
+  
   stopMotors();
 }
 
