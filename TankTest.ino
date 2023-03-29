@@ -33,7 +33,7 @@ int const float2Pin = 2;
 int const float3Pin = 3;
 int const photoPin = 4;
 
-int const aruco = 12;
+int const aruco = 11;
 //will need to add LED to diagram and code
 
 float missionX = .5; 
@@ -88,10 +88,9 @@ void setup() {
 }
 
 void loop() {
-  //float USDist = getDist();
-  //Enes100.println(USDist);
 
-
+  delay(3000);
+  
   go2mission();
   delay(250);
   //Mission Code
@@ -106,6 +105,7 @@ void loop() {
   //Celebration
   Enes100.println("Finished Loop");
   while(1){}
+  
 
 }
 
@@ -115,7 +115,8 @@ void straight(float x_dest, float y_dest){
   float y = Enes100.location.y;
   float tht = Enes100.location.theta;
   float desired_tht = atan2((y_dest-y),(x_dest-x)); //angle we want to go
-  //Enes100.println("Desired Theta: " + String(desired_tht));
+  Enes100.println("Desired Theta: " + String(desired_tht));
+  Enes100.println("Y Destination" + String(y_dest));
   if (abs(desired_tht - tht) > tht_tol){
     turn(desired_tht);
   }
@@ -191,6 +192,7 @@ void turn(float desired_tht){
   stopMotors();
 }
 
+/*
 void turnRight(float time){
   //Left wheels CCW, Right wheels CW
   motor1(1);
@@ -199,13 +201,13 @@ void turnRight(float time){
   stopMotors();
   delay(100);
 }
-
+*/
 void turnRight(){
   motor1(1);
   motor2(0);
 
 }
-
+/*
 void turnLeft(float time){
   //Left wheels CW, Right wheels CCW
   motor1(0);
@@ -214,7 +216,7 @@ void turnLeft(float time){
   stopMotors();
   delay(100);
 }
-
+*/
 void turnLeft(){
   motor1(0);
   motor2(1);
@@ -272,21 +274,25 @@ bool getCond(){
 
 void go2mission(){
   // put your main code here, to run repeatedly:
+  delay(100);
   Enes100.updateLocation(); //get location
+  delay(100);
   float x = Enes100.location.x;
-  float y = Enes100.location.y;
+  float y = Enes100.location.y; //getting wrong y value, ~.55 when starting at 1.5
   float tht = Enes100.location.theta;
+  Enes100.println("Y val:" + String(y));
   //Go to mission
 
-  if(y<1){
+  if(y < 1){
     missionY = 1.5;
   }
-  else{
+  else if(y > 1){
     missionY = 0.5;    
   }
 
   while(getDist() > distTol && calcDist(x, missionX, y, missionY) > distTol ){
-  Enes100.print("entered while loop ");  
+  Enes100.print("entered while loop ");
+  Enes100.print("Mission Y:" + String(missionY));
   straight(missionX, missionY);
      Enes100.updateLocation();
      x = Enes100.location.x;
@@ -331,6 +337,8 @@ void obstacles(){
         obsCoord[0] = x;
         obsCoord[1] = y;
         Enes100.println("Detected Obstacle");
+        Enes100.println(String(obsCoord[0]));
+        Enes100.println(String(obsCoord[1]));
       }
     }
     stopMotors();
@@ -375,12 +383,14 @@ void obstacles(){
     x = Enes100.location.x;
     y = Enes100.location.y;
     tht = Enes100.location.theta;
+    Enes100.println(String(obsCoord[0]));
+    Enes100.println(String(obsCoord[1]));
     if(x < obs2X){ //stopped because it detected an object
       //Enes100.println("Going down an obstacle height to " + String(y-obsHeight)+  "from" + String(y));
-      if(obsCoord[0] > obs1X){ // turn in same direction as previous, no detected objects previously
+      if(obsCoord[0] > obs1X){ // turn in same direction as previous, no detected objects previously, detected obstacle in 2nd column
         //Enes100.println("Entered <3 while loop if statement");
         float y1 = y;
-        while(calcDist(x,x,y,y1-obsHeight)>obs2X){
+        while(calcDist(x,x,y,y1-obsHeight)>distTol){
           straight(x,y1-obsHeight);
           Enes100.updateLocation();
           x = Enes100.location.x;
@@ -388,10 +398,21 @@ void obstacles(){
           tht = Enes100.location.theta;
         }
       }
+      else if(obsCoord[0] <= obs1X){ //detected obstacle in 1st column
+        float y1 = y;
+        while(calcDist(x,x,y,obsCoord[1])>distTol){
+          straight(x,obsCoord[1]);
+          Enes100.updateLocation();
+          x = Enes100.location.x;
+          y = Enes100.location.y;
+          tht = Enes100.location.theta;
+        }
+
+      }      
       else{ // turn in opposite direction
         //Enes100.println("Entered <3 while loop else statement");
         float y1 = y;
-        while(calcDist(x,x,y,y1+obsHeight)>obs2X){
+        while(calcDist(x,x,y,y1+obsHeight)>distTol){
           straight(x,y1+obsHeight);
           Enes100.updateLocation();
           x = Enes100.location.x;
