@@ -23,8 +23,8 @@ float const pwm = 255;
 int const straightTol = 250; //ms per stop when going straight
 float const obsHeight = .45; //meters
 //Digital pins
-int const wifiTXPin = 52; //wifi module pins
-int const wifiRXPin = 50;
+int const wifiTXPin = 2; //wifi module pins
+int const wifiRXPin = 3;
 int const motor1Pow = 4; //motors pins
 int const motor1Dir = 5;
 int const motor2Pow = 6;
@@ -62,9 +62,6 @@ Servo myservo; // initializes servo object
 void setup() {
   // put your setup code here, to run once:
   //pin setup
-  
-  Tank.begin();
-  /*
   pinMode(motor1Pow, OUTPUT);
   pinMode(motor1Dir, OUTPUT);
   pinMode(motor2Pow, OUTPUT);
@@ -80,19 +77,12 @@ void setup() {
   pinMode(photoPin, INPUT);
   //Set up servo pin
   myservo.attach(servoPin);
-  */
 
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
   Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
-  Enes100.print("Destination is at (");
-  Enes100.print(missionX);
-  Enes100.print(", ");
-  Enes100.print(missionY);
-  Enes100.println(")");
+
 
   //bring arm up
-
-
 }
 
 void loop() {
@@ -113,8 +103,6 @@ void loop() {
   //Celebration
   Enes100.println("Finished Loop");
   while(1){}
-  
-
 }
 
 //overloaded straight function that tells OSV to go in direction of x_dest and y_dest
@@ -203,23 +191,25 @@ void turnLeft(){
 }
 
 void motor1(int dir){ //0 is CW, 1 is CCW
-  if(dir == 1)
-    Tank.setLeftMotorPWM(pwm);
+  digitalWrite(motor1Pow,HIGH);
+  if(dir == 0)
+    digitalWrite(motor1Dir,HIGH);
   else
-    Tank.setLeftMotorPWM(-1*pwm);
+    digitalWrite(motor1Dir,LOW);
 
 }
 
 void motor2(int dir){ //0 is CW, 1 is CCW
-  if(dir == 1)
-    Tank.setRightMotorPWM(pwm);
+  digitalWrite(motor2Pow,HIGH);
+  if(dir == 0)
+    digitalWrite(motor2Dir,HIGH);
   else
-    Tank.setRightMotorPWM(-1*pwm);
+    digitalWrite(motor2Dir,LOW);
 }
 
 void stopMotors(){
-  Tank.setLeftMotorPWM(0);
-  Tank.setRightMotorPWM(0);
+  digitalWrite(motor1Pow,LOW); //turns the power off to both motors
+  digitalWrite(motor2Pow,LOW);
 }
 
 void forward(){
@@ -234,9 +224,19 @@ void reverse(){
 
 //gets distance from ultrasonic sensor in cm
 float getDist(){
-  return Tank.readDistanceSensor(1)*float(100);
+  //code from https://howtomechatronics.com/tutorials/arduino/ultrasonic-sensor-hc-sr04/
+  digitalWrite(ultraTrigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin on HIGH state for 10 micro seconds
+  digitalWrite(ultraTrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ultraTrigPin, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  float duration = pulseIn(ultraEchoPin, HIGH);
+  // Calculating the distance
+  float distance = duration * 0.034 / 2;
+  return distance;
 }
-
 //calculates distance between two points in cm
 float calcDist(float x1, float x2, float y1, float y2){
   return float(sqrt(pow((x1-x2),2)+pow((y1-y2),2)))*float(100);
