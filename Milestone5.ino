@@ -25,12 +25,12 @@ float const obsHeight = .45; //meters
 //Digital pins
 int const wifiTXPin = 2; //wifi module pins
 int const wifiRXPin = 3;
-int const motor1Pow = 4; //motors pins
-int const motor1Dir = 5;
-int const motor2Pow = 6;
-int const motor2Dir = 7;
-int const pumpPow = 8; // Pump pins
-int const pumpDir = 9;
+int const motor1In1 = 5; //motors pins
+int const motor1In2 = 4;
+int const motor2In1 = 7;
+int const motor2In2 = 6;
+int const pumpIn1 = 8; // Pump pins
+int const pumpIn2 = 9;
 int const servoPin = 10;
 int const ultraTrigPin = 11; //Ultrasonic pins
 int const ultraEchoPin = 12;
@@ -41,7 +41,7 @@ int const float2Pin = 2;
 int const float3Pin = 3;
 int const photoPin = 4;
 
-int const aruco = 11;
+int const aruco = 13;
 //will need to add LED to diagram and code
 
 float missionX = .5; 
@@ -62,12 +62,12 @@ Servo myservo; // initializes servo object
 void setup() {
   // put your setup code here, to run once:
   //pin setup
-  pinMode(motor1Pow, OUTPUT);
-  pinMode(motor1Dir, OUTPUT);
-  pinMode(motor2Pow, OUTPUT);
-  pinMode(motor2Dir, OUTPUT);
-  pinMode(pumpPow, OUTPUT);
-  pinMode(pumpDir, OUTPUT);
+  pinMode(motor1In1, OUTPUT);
+  pinMode(motor1In2, OUTPUT);
+  pinMode(motor2In1, OUTPUT);
+  pinMode(motor1In2, OUTPUT);
+  pinMode(pumpIn1, OUTPUT);
+  pinMode(pumpIn2, OUTPUT);
   pinMode(ultraTrigPin, OUTPUT);
   pinMode(ultraEchoPin, INPUT); 
   pinMode(conductPin, INPUT);
@@ -86,7 +86,12 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+   // put your main code here, to run repeatedly:
+  updateLoc();
+  updateLoc();
+  updateLoc();
+   /*
+
 
   //go straight from top left to top right
   updateLoc();
@@ -99,6 +104,7 @@ void loop() {
 
   //turn 4 times
 
+
   turn(-1*pi/2);
   delay(1000);
   turn(pi);
@@ -107,8 +113,8 @@ void loop() {
   delay(1000);
   turn(0);
 
-
-  delay(5000);
+*/
+  delay(2000);
   //pump water in for 10 seconds
   pump(10000,0);
 
@@ -203,26 +209,34 @@ void turnLeft(){
   motor2(1); // turn right motors CCW (from outside of wheel) 
 }
 
-void motor1(int dir){ //0 is CW, 1 is CCW
-  digitalWrite(motor1Pow,HIGH);
-  if(dir == 0)
-    digitalWrite(motor1Dir,HIGH);
-  else
-    digitalWrite(motor1Dir,LOW);
+void motor1(int dir){ //0 is forward, 1 is back
+  if(dir == 0){
+    digitalWrite(motor1In1,HIGH);
+    digitalWrite(motor1In2,LOW);
+  }
+  else{
+    digitalWrite(motor1In1,LOW);
+    digitalWrite(motor1In2,HIGH);
+  }
 
 }
 
-void motor2(int dir){ //0 is CW, 1 is CCW
-  digitalWrite(motor2Pow,HIGH);
-  if(dir == 0)
-    digitalWrite(motor2Dir,HIGH);
-  else
-    digitalWrite(motor2Dir,LOW);
+void motor2(int dir){ //0 is forward, 1 is back
+  if(dir == 0){
+    digitalWrite(motor2In1,HIGH);
+    digitalWrite(motor2In2,LOW);
+  }
+  else{
+    digitalWrite(motor2In1,LOW);
+    digitalWrite(motor2In2,HIGH);
+  }
 }
 
-void stopMotors(){
-  digitalWrite(motor1Pow,LOW); //turns the power off to both motors
-  digitalWrite(motor2Pow,LOW);
+void stopMotors(){ //turna power off for both motors
+  digitalWrite(motor1In1,LOW);
+  digitalWrite(motor1In2,LOW);
+  digitalWrite(motor2In1,LOW);
+  digitalWrite(motor2In2,LOW);
 }
 
 void forward(){
@@ -452,12 +466,15 @@ void limbo(){
 }
 
 void pump(float time, int dir){ //0 dir is in, 1 dir is out
-  digitalWrite(pumpPow,HIGH);
-  if(dir == 0)
-    digitalWrite(pumpDir,HIGH);
-  else
-    digitalWrite(pumpDir,LOW);
+  if(dir == 0){
+    digitalWrite(pumpIn1,HIGH);
+    digitalWrite(pumpIn2,LOW);
+  }
+  else{
+    digitalWrite(pumpIn1,LOW);
+    digitalWrite(pumpIn2,HIGH);
+  }
   delay(time);
-  digitalWrite(pumpDir,LOW);
-  digitalWrite(pumpDir,LOW);
+  digitalWrite(pumpIn1,LOW);
+  digitalWrite(pumpIn2,LOW);
 }
