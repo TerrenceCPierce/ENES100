@@ -82,10 +82,13 @@ void setup() {
 
 
   //bring arm up
+  myservo.write(90);
+  delay(3000);
+  setServo(90);
 }
 
 void loop() {
-  ultraTest();
+//ultraTest();
 //servoTest();
 //mainCode();
   while(1){}
@@ -116,9 +119,10 @@ void mainCode(){
 }
 
 void servoTest(){
-   setServo(180);
+   setServo(90);
   delay(2000);
   setServo(0);
+  delay(1000);
 }
 
 void ultraTest(){
@@ -484,7 +488,14 @@ void pump(float time, int dir){ //0 dir is in, 1 dir is out
   digitalWrite(pumpIn2,LOW);
 }
 
-void setServo(float ang){
-  myservo.write(ang);
+void setServo(float finAng){
+  float ang = myservo.read();
+  finAng = abs(90-finAng);
+  ang = abs(90-ang);
+  for (ang; ang <= finAng; ang += 1) { // goes from 0 degrees to 90 degrees
+    // in steps of 1 degree
+    myservo.write(ang);              // tell servo to go to position in variable 'ang
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
   delay(1000);
 }
