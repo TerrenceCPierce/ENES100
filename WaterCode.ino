@@ -1,23 +1,35 @@
 #include "Enes100.h"
 #include <Servo.h>
 
+//use a define to get shortcut to enes100 position x
+#define getLoc Enes100.updateLocation()
+#define xLoc Enes100.location.x
+#define yLoc Enes100.location.y
+#define thtLoc Enes100.location.theta
+
+float x;
+float y;
+float tht;
+
 //global 
-float const tht_tol = .1;
+float const tht_tol = .05;
 float const pi = 3.1415;
-float const turnTimeTol = .1;
+float const turnTimeTol = 1;
 float const condTol = 2;
+float const distTol = 15;
+
 float const pwm = 255;
 int const straightTol = 250; //ms per stop when going straight
 float const obsHeight = .45; //meters
 //Digital pins
 int const wifiTXPin = 2; //wifi module pins
 int const wifiRXPin = 3;
-int const motor1Pow = 4; //motors pins
-int const motor1Dir = 5;
-int const motor2Pow = 6;
-int const motor2Dir = 7;
-int const pumpPow = 8; // Pump pins
-int const pumpDir = 9;
+int const motor1In1 = 5; //motors pins
+int const motor1In2 = 4;
+int const motor2In1 = 7;
+int const motor2In2 = 6;
+int const pumpIn1 = 8; // Pump pins
+int const pumpIn2 = 9;
 int const servoPin = 10;
 int const ultraTrigPin = 11; //Ultrasonic pins
 int const ultraEchoPin = 12;
@@ -28,26 +40,33 @@ int const float2Pin = 2;
 int const float3Pin = 3;
 int const photoPin = 4;
 
-int const aruco = 219;
+int const aruco = 13;
 //will need to add LED to diagram and code
 
 float missionX = .5; 
 float missionY = 1.5;
 
+float obs1X = 1.5;
+
+float obs2X = 2.6;
+
 float limboX = 3.3;
 float limboY = 1.5;
+
+float finalX = 3.6;
+float finalY = 1.5;
 
 Servo myservo; // initializes servo object
 
 void setup() {
   // put your setup code here, to run once:
   //pin setup
-  pinMode(motor1Pow, OUTPUT);
-  pinMode(motor1Dir, OUTPUT);
-  pinMode(motor2Pow, OUTPUT);
-  pinMode(motor2Dir, OUTPUT);
-  pinMode(pumpPow, OUTPUT);
-  pinMode(pumpDir, OUTPUT);
+  pinMode(motor1In1, OUTPUT);
+  pinMode(motor1In2, OUTPUT);
+  pinMode(motor2In1, OUTPUT);
+  pinMode(motor1In2, OUTPUT);
+  pinMode(pumpIn1, OUTPUT);
+  pinMode(pumpIn2, OUTPUT);
   pinMode(ultraTrigPin, OUTPUT);
   pinMode(ultraEchoPin, INPUT); 
   pinMode(conductPin, INPUT);
@@ -59,161 +78,172 @@ void setup() {
   myservo.attach(servoPin);
 
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
-  Enes100.begin("Elephante", WATER, aruco, wifiTXPin, wifiRXPin);
-  Enes100.print("Destination is at (");
-  Enes100.print(missionX);
-  Enes100.print(", ");
-  Enes100.print(missionY);
-  Enes100.println(")");
+  Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
+
 
   //bring arm up
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-    Enes100.updateLocation(); //get location
-  float x = Enes100.location.x;
-  float y = Enes100.location.y;
-  float tht = Enes100.location.theta;
-  //Go to mission
-  while(getDist() > 10 && calcDist(x, Enes100.missionSite.x, y, Enes100.missionSite.y) > 10 ){
-  straight(Enes100.missionSite.x, Enes100.missionSite.y);
-    Enes100.updateLocation();
-    x = Enes100.location.x;
-    y = Enes100.location.y;
-  }
-  stopMotors();
+  setServo(180);
+  delay(2000);
+  setServo(0);
+//mainCode();
 
+  while(1){}
+}
+
+void mainCode(){
+  delay(1000);
+  updateLoc(); //updates location a few times to get rid of incorrect values at start
+  updateLoc();
+  updateLoc();
+  delay(3000);
+  
   go2mission();
   delay(250);
-
   //Mission Code
   mission();
-
   //Traverse Obstacles
   obstacles();
-
   //Go to limbo
   go2limbo();
-
   //Go under limbo
   limbo();
 
   //Celebration
   Enes100.println("Finished Loop");
   while(1){}
-
+  
 }
 
-void straight(float x_dest, float y_dest){
-  Enes100.updateLocation(); //get location
-  float x = Enes100.location.x;
-  float y = Enes100.location.y;
-  float tht = Enes100.location.theta;
+
+//overloaded straight function that tells OSV to go in direction of x_dest and y_dest
+void straight(float x_dest, float y_dest){ 
+  updateLoc(); //get Location and update values
   float desired_tht = atan2((y_dest-y),(x_dest-x)); //angle we want to go
   //Enes100.println("Desired Theta: " + String(desired_tht));
-  if (abs(desired_tht - tht) > tht_tol){
+  //Enes100.println("Y Destination" + String(y_dest));
+  
+  if (abs(desired_tht - tht) > tht_tol){ //makes sure vehicle is pointing in the right direction
     turn(desired_tht);
   }
-  forward(); //go forward for 1/2 second
+
+  //goes forward a certain amount after adjusting angle
+  forward(); 
   delay(straightTol);
   stopMotors();
-  Enes100.updateLocation(); //get location
-  x = Enes100.location.x;
-  y = Enes100.location.y;
-  tht = Enes100.location.theta;
+  updateLoc(); //get Location and update values
+
   if (abs(desired_tht-tht) > tht_tol){
+    turn(desired_tht); // readjust angle towards target
+  }
+}
+
+//overloaded straight function that tells OSV to go in direction of desired_tht
+void straight(float desired_tht){ 
+  updateLoc(); //get Location and update values
+  if (abs(desired_tht - tht) > tht_tol){//makes sure vehicle is pointing in the right direction
+    turn(desired_tht);
+  }
+
+  //goes forward a certain amount after adjusting angle
+  forward(); 
+  delay(straightTol);
+  stopMotors();
+  updateLoc(); //get location and update values
+
+  if (abs(desired_tht-tht) > tht_tol){ //makes sure vehicle is pointing in the right direction
     turn(desired_tht); // readjust towards target
   }
 }
 
-void turn(int desired_tht){
-  Enes100.updateLocation(); //get location
-  float tht = Enes100.location.theta;
+void turn(float desired_tht){
+  updateLoc(); //get location and update values
   while(abs(desired_tht-tht) > tht_tol){ //while angle is far away
-
     float diff_tht = desired_tht-tht;
-    if (desired_tht> tht){
-      if(diff_tht >= pi) 
-        //Enes100.println("Case 1");
-        turnRight(int((2*pi-diff_tht)/turnTimeTol)); //turn a smaller amount if difference is greater (closer, just on other side of discontinuity)
-        
-      else if(diff_tht < pi)
-        //Enes100.println("Case 2");
-        turnLeft(int(diff_tht/turnTimeTol)); //turn a larger amount if difference is greater (farther)
+
+    //Series of conditions which determine shortest path to turn
+    if (desired_tht > tht){ 
+      if(diff_tht >= pi){
+        turnRight(); 
+      }
+      else if(diff_tht < pi){
+        turnLeft(); 
+      }
     }
     else{
-      if(diff_tht <= pi) 
-        turnRight(int(diff_tht/turnTimeTol)); //turn a larger amount if difference is greater (farther)
-      else if(diff_tht > pi)
-        turnLeft(int((2*pi-diff_tht)/turnTimeTol)); //turn a smaller amount if difference is greater (closer, just on other side of discontinuity)
-    }
-  Enes100.updateLocation(); //get location
-  tht = Enes100.location.theta;  
-  }
-}
+      if(diff_tht <= pi){ 
+        turnRight();
 
-void turnRight(float time){
-  //Left wheels CCW, Right wheels CW
-  motor1(1);
-  motor2(0);
-  delay(100*time);
+      }
+      else if(diff_tht > pi){
+        turnLeft();
+      }
+    }
+  
+  updateLoc(); //get location and update values
+  //delay(100);
+  stopMotors(); //stops to check conditions
+  delay(200);
+  //Enes100.println(tht);
+  }
+  // angle is now within tolerance
   stopMotors();
-  delay(100);
 }
 
 void turnRight(){
-  motor1(1);
-  motor2(0);
+  motor1(1); //turn left motor CCW (from outside of wheel) 
+  motor2(0); // turn right motors CW (from outside of wheel) 
 
-}
-
-void turnLeft(float time){
-  //Left wheels CW, Right wheels CCW
-  motor1(0);
-  motor2(1);
-  delay(100*time);
-  stopMotors();
-  delay(100)
 }
 
 void turnLeft(){
-  motor1(0);
-  motor2(1);
+  motor1(0); //turn left motor CW (from outside of wheel) 
+  motor2(1); // turn right motors CCW (from outside of wheel) 
 }
 
-void motor1(int dir){ //0 is CW, 1 is CCW
-  digitalWrite(motor1Pow,HIGH);
-  if(dir == 0)
-    digitalWrite(motor1Dir,HIGH);
-  else
-    digitalWrite(motor1Dir,LOW);
+void motor1(int dir){ //0 is forward, 1 is back
+  if(dir == 0){
+    digitalWrite(motor1In1,HIGH);
+    digitalWrite(motor1In2,LOW);
+  }
+  else{
+    digitalWrite(motor1In1,LOW);
+    digitalWrite(motor1In2,HIGH);
+  }
 
 }
 
-void motor2(int dir){ //0 is CW, 1 is CCW
-  digitalWrite(motor2Pow,HIGH);
-  if(dir == 0)
-    digitalWrite(motor2Dir,HIGH);
-  else
-    digitalWrite(motor2Dir,LOW);
+void motor2(int dir){ //0 is forward, 1 is back
+  if(dir == 0){
+    digitalWrite(motor2In1,HIGH);
+    digitalWrite(motor2In2,LOW);
+  }
+  else{
+    digitalWrite(motor2In1,LOW);
+    digitalWrite(motor2In2,HIGH);
+  }
 }
 
-void stopMotors(){
-  digitalWrite(motor1Pow,LOW); //turns the power off to both motors
-  digitalWrite(motor2Pow,LOW);
+void stopMotors(){ //turna power off for both motors
+  digitalWrite(motor1In1,LOW);
+  digitalWrite(motor1In2,LOW);
+  digitalWrite(motor2In1,LOW);
+  digitalWrite(motor2In2,LOW);
 }
 
 void forward(){
-  motor1(1); //turns both motors CCW
+  motor1(1); //turns both motors CW (from outside of wheel) 
   motor2(1);
 }
 
 void reverse(){
-  motor1(0); //turns both motors CW
+  motor1(0); //turns both motors CCW (from outside of wheel) 
   motor2(0);
 }
 
+//gets distance from ultrasonic sensor in cm
 float getDist(){
   //code from https://howtomechatronics.com/tutorials/arduino/ultrasonic-sensor-hc-sr04/
   digitalWrite(ultraTrigPin, LOW);
@@ -228,11 +258,12 @@ float getDist(){
   float distance = duration * 0.034 / 2;
   return distance;
 }
-
+//calculates distance between two points in cm
 float calcDist(float x1, float x2, float y1, float y2){
   return float(sqrt(pow((x1-x2),2)+pow((y1-y2),2)))*float(100);
 }
 
+//returns if the water has salt or not
 bool getCond(){
   float val = analogRead(conductPin);
   if (val > condTol){
@@ -240,21 +271,42 @@ bool getCond(){
   }
 }
 
-void go2mission(){
-  // put your main code here, to run repeatedly:
-  Enes100.updateLocation(); //get location
-  float x = Enes100.location.x;
-  float y = Enes100.location.y;
-  float tht = Enes100.location.theta;
-  //Go to mission
+//gets location and updates position variables
+void updateLoc(){
+  getLoc;
+  x = xLoc;
+  y = yLoc;
+  tht = thtLoc;
+}
 
-  while(getDist() > 10 && calcDist(x, missionX, y, missionY) > 10 ){
-  Enes100.print("entered while loop ");
-  straight(missionX, missionY);
-    Enes100.updateLocation();
-    x = Enes100.location.x;
-    y = Enes100.location.y;    
+//goes to the mission site
+void go2mission(){
+  delay(100);
+  getLoc; //get location
+  delay(100);
+  x = xLoc;
+  y = yLoc; //getting wrong y value, ~.55 when starting at 1.5
+  tht = thtLoc;
+  Enes100.println("Y val:" + String(y));
+  updateLoc(); //trying to get location again in case this location is correct
+  Enes100.println("Y val:" + String(y));
+  
+  //find correct mission Y based on what y is
+  if(y < 1){
+    missionY = 1.5;
   }
+  else if(y > 1){
+    missionY = 0.5;    
+  }
+
+  //while the ultrasonic sensor does not detect anything within tolerance and while the calculated distance is far enough away, keep going forward
+  while(getDist() > distTol && calcDist(x, missionX, y, missionY) > distTol ){
+  //Enes100.print("entered while loop ");
+  //Enes100.print("Mission Y:" + String(missionY));
+  straight(missionX, missionY);
+  updateLoc();
+  }
+  
   stopMotors();
 }
 
@@ -262,152 +314,166 @@ void mission(){
   //do stuff
 }
 
+//navigate OSV through obstacles
 void obstacles(){
-  turn(0);
-  Enes100.updateLocation();
-  float x = Enes100.location.x;
-  float y = Enes100.location.y;
-  float tht = Enes100.location.theta;
-  float obsCoord[2] = {0,0};
-  float des_tht; 
+  turn(0); //turn to face right
+  updateLoc(); //get location and update values
+  float obsCoord[2] = {0,0}; //initialize obstacle Coordinates to start as x=0 and y=0
+  float des_tht; //initialize desired theta for turning towards middle
 
   if(missionY > 1)    
     des_tht = -1*pi/2; //towards middle
   else
-    des_tht = pi/2;
+    des_tht = pi/2; //towards middle
 
-  while(x < 1.5){
-    turn(0);
-    float USDist = getDist();
-    while(USDist > 10){
-      Enes100.updateLocation();
-      x = Enes100.location.x;
-      y = Enes100.location.y;
-      straight(x+.1,y);
-      USDist = getDist();
-      Enes100.println(USDist);
-      if(USDist < 10){
-        Enes100.updateLocation();
-        x = Enes100.location.x;
-        y = Enes100.location.y;
-        obsCoord[0] = x;
-        obsCoord[1] = y;
-        Enes100.println("Detected Obstacle");
+  //Code for making it past first column of obstacles
+  while(x < obs1X){
+    turn(0); //turn to face right
+
+    //while no obstacle is detected
+    while(getDist() > distTol){
+      updateLoc(); //get location and update values
+      straight(0); // go straight to the right
+
+      if(getDist() < distTol){ //if an obstacle is detected
+        updateLoc(); //get location and update values
+
+        if(x < obs1X){ //if the obstacle detected is in the first column
+          obsCoord[0] = x; //save x coordinate of obstacle
+          obsCoord[1] = y; //save y coordinate of obstacle
+          Enes100.println("Detected Obstacle");
+          Enes100.println(String(obsCoord[0]));
+          Enes100.println(String(obsCoord[1]));
+        }
       }
     }
-    stopMotors();
-    Enes100.updateLocation();
-    x = Enes100.location.x;
-    y = Enes100.location.y;
-    tht = Enes100.location.theta;
-    if(x < 1.5){
 
-      //Enes100.println("Going down an obstacle height to " + String(y-obsHeight)+  "from" + String(y));
+    //once an obstacle is detected, stop
+    stopMotors();
+    updateLoc(); //get location and update values
+
+    if(x < obs1X){ //if OSV is still in the first row of obstacles
       float y1 = y;
-      while(calcDist(x,x,y,y1-obsHeight)>3){
-        straight(x,y1-obsHeight);
-        Enes100.updateLocation();
-        x = Enes100.location.x;
-        y = Enes100.location.y;
-        tht = Enes100.location.theta;
+
+      //while distance to middle of next obstacle is far, keep moving
+      while(calcDist(x,x,y,y1+(obsHeight*des_tht/(pi/2)))>3){
+        straight(des_tht);
+        updateLoc(); //get location and update values
       }
-      if(y <= missionY-1.8*obsHeight){ //last row change this to accomodate both starting positions
-        straight(1.6, y);
+
+      //if made it to the last row, just move right
+      if(y <= missionY+1.8*(obsHeight*des_tht/(pi/2))){ //last row
+        while(calcDist(x,obs1X+.3,y,y)>3){
+          straight(0);
+        }
       }
     }
   }
 
-  Enes100.updateLocation();
-  x = Enes100.location.x;
-  y = Enes100.location.y;
-  tht = Enes100.location.theta;
-
-  while(x < 3){
-    Enes100.println("Entered <3 while loop");
-    float USDist = getDist();
-    while(USDist > 10 & x < 3){
-      Enes100.updateLocation();
-      x = Enes100.location.x;
-      y = Enes100.location.y;
-      straight(x+.1,y);
-      USDist = getDist();
-      Enes100.println(USDist);
+  updateLoc(); //get location and update values
+  
+  //Code for making it past second column of obstacles
+  while(x < obs2X){
+    Enes100.println("At second column of obstacles");
+    
+    //while no obstacles are detected and while not past the second column of obstacles
+    while(getDist() > distTol & x < obs2X +.3){
+      updateLoc(); //get location and update values
+      straight(0); //move right
     }
+
+    //once an obstacle is detected or past the second column, stop
     stopMotors();
-    Enes100.updateLocation();
-    x = Enes100.location.x;
-    y = Enes100.location.y;
-    tht = Enes100.location.theta;
-    if(x < 3){ //stopped because it detected an object
-      //Enes100.println("Going down an obstacle height to " + String(y-obsHeight)+  "from" + String(y));
-      if(obsCoord[0] > 1.5){ // turn in same direction as previous, no detected objects previously
-        Enes100.println("Entered <3 while loop if statement");
+    updateLoc(); //get location and update values
+
+    if(x < obs2X){ //stopped because it detected an object
+      if(obsCoord[0] == 0){ // turn in same direction as previous, no detected objects previously because obsCoord is still default value
         float y1 = y;
-        while(calcDist(x,x,y,y1-obsHeight)>3){
-          straight(x,y1-obsHeight);
-          Enes100.updateLocation();
-          x = Enes100.location.x;
-          y = Enes100.location.y;
-          tht = Enes100.location.theta;
+
+        //because no previous obstacles, basically treat this as first column with no known information
+        //while the OSV is far away from the next row of obstacles, move in that direction
+        while(calcDist(x,x,y,y1+(obsHeight*des_tht/(pi/2)))>3){
+          straight(des_tht); //move in desired direction
+          updateLoc(); //get location and update values
         }
       }
-      else{ // turn in opposite direction
-        Enes100.println("Entered <3 while loop else statement");
+
+      //If an obstacle was detected in the first column, since two obstacles can't be in the same row, turn in that direction
+      else if(obsCoord[0] <= obs1X){ //detected obstacle in 1st column
         float y1 = y;
-        while(calcDist(x,x,y,y1+obsHeight)>3){
-          straight(x,y1+obsHeight);
-          Enes100.updateLocation();
-          x = Enes100.location.x;
-          y = Enes100.location.y;
-          tht = Enes100.location.theta;
+        //while far away from destination, move towards destination
+        while(calcDist(x,x,y,obsCoord[1])>3){
+          straight(x,obsCoord[1]); //move straight towards current x value, but y value of previous obstacle
+          updateLoc(); //get location and update values
         }
+
+      }
+      else{ // this condition should never happen, if it does, something went wrong
+      /*
+        //Enes100.println("Entered <3 while loop else statement");
+        float y1 = y;
+        while(calcDist(x,x,y,y1+obsHeight)>distTol){
+          straight(x,y1+obsHeight);
+          getLoc;
+          x = xLoc;
+          y = yLoc;
+          tht = thtLoc;
+        }
+        */
+        Enes100.println("Entered 2nd column else statement, conditions went wrong, Exiting----");
+        while(1){}
       }
     }
   }
 }
 
+//navigate OSV to limbo
 void go2limbo(){
-  // put your main code here, to run repeatedly:
-  Enes100.updateLocation(); //get location
-  float x = Enes100.location.x;
-  float y = Enes100.location.y;
-  float tht = Enes100.location.theta;
+  updateLoc(); //get location and update values
   //Go to limbo
 
-  while(getDist() > 10 && calcDist(x, limboX, y, limboY) > 10 ){
+  //While far away from limbo and no obstacles detected, move towards limbo entrance
+  while(getDist() > distTol && calcDist(x, limboX, y, limboY) > distTol ){
   straight(limboX, limboY);
-    Enes100.updateLocation();
-    x = Enes100.location.x;
-    y = Enes100.location.y;    
+    updateLoc(); //get location and update values 
   }
+  //stop once arrived at limbo
   stopMotors();
 }
 
+//go under limbo
 void limbo(){
-  turn(0);
-  while(getDist() > 10){
+  turn(0); //turn right
+  updateLoc(); //get location and update values
+
+  //move forward to the right while distance sensor does not detect the wall or while the x and y values are far from final location
+  //this uses the vision system as little as possible since the limbo blocks the camera from getting position values for a small amount of time
+  while(getDist() > distTol && calcDist(x, finalX, y, finalY) > distTol){
     forward(); 
     delay(straightTol);
     stopMotors();
+    updateLoc(); //get location and update values
   }
+
+  //reached the end, stop the motors
   stopMotors();
 }
-/*
-float getTheta(){
-  float tht = Enes100.location.theta;
-  if (tht < 0)
-    tht += 2*pi;
-  delay(50);
-  return tht;
+
+void pump(float time, int dir){ //0 dir is in, 1 dir is out
+  if(dir == 0){
+    digitalWrite(pumpIn1,HIGH);
+    digitalWrite(pumpIn2,LOW);
+  }
+  else{
+    digitalWrite(pumpIn1,LOW);
+    digitalWrite(pumpIn2,HIGH);
+  }
+  delay(time);
+  digitalWrite(pumpIn1,LOW);
+  digitalWrite(pumpIn2,LOW);
 }
 
-
-float* getPos(){
-  Enes100.updateLocation(); //get location
-  float x = Enes100.location.x;
-  float y = Enes100.location.y;
-  float tht = Enes100.location.theta;
-  float arr [3] = {x,y,tht}; // create array with location and angle
-  return arr;
+void setServo(float ang){
+  myservo.write(ang);
+  delay(1000);
 }
-*/
