@@ -85,11 +85,9 @@ void setup() {
 }
 
 void loop() {
-  setServo(180);
-  delay(2000);
-  setServo(0);
+  ultraTest();
+//servoTest();
 //mainCode();
-
   while(1){}
 }
 
@@ -117,6 +115,19 @@ void mainCode(){
   
 }
 
+void servoTest(){
+   setServo(180);
+  delay(2000);
+  setServo(0);
+}
+
+void ultraTest(){
+  Serial.begin(9600);
+  while(1){
+    Serial.println(getDist());
+    delay(500);
+  }
+}
 
 //overloaded straight function that tells OSV to go in direction of x_dest and y_dest
 void straight(float x_dest, float y_dest){ 
