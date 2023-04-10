@@ -91,6 +91,7 @@ void loop() {
 //ultraTest();
 //servoTest();
 //mainCode();
+  pump(25000,0);
   while(1){}
 }
 
@@ -296,6 +297,7 @@ void updateLoc(){
 
 //goes to the mission site
 void go2mission(){
+  setServo(90);
   delay(100);
   getLoc; //get location
   delay(100);
@@ -326,11 +328,16 @@ void go2mission(){
 }
 
 void mission(){
+  setServo(0);
   //do stuff
+  delay(1000);
+  pump(20000, 0);
+
 }
 
 //navigate OSV through obstacles
 void obstacles(){
+  setServo(90); //bring arm up
   turn(0); //turn to face right
   updateLoc(); //get location and update values
   float obsCoord[2] = {0,0}; //initialize obstacle Coordinates to start as x=0 and y=0
@@ -458,6 +465,7 @@ void go2limbo(){
 
 //go under limbo
 void limbo(){
+  setServo(0); //bring arm down to go through limbo
   turn(0); //turn right
   updateLoc(); //get location and update values
 
