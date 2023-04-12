@@ -4,7 +4,7 @@ Serial.begin(9600); //this initializes the Serial Monitor so that I can see thin
 }
 
 void loop() {
-
+//950 for disconnected, 600 for fresh, 500 for salt 
 Serial.println(analogRead(A0));
 if(analogRead(A0)>876) //this is the condition to be checked
 {
