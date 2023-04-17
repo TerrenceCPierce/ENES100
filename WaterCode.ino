@@ -15,8 +15,11 @@ float tht;
 float const tht_tol = .05;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
-float const condTol = 2;
+float const analogTol = 2000;
 float const distTol = 15;
+float const photoTol = 500;
+float const condTol = 600;
+float const waterCondTol = 400;
 
 float const pwm = 255;
 int const straightTol = 250; //ms per stop when going straight
@@ -37,7 +40,6 @@ int const ultraEchoPin = 12;
 int const conductPin = 0;
 int const float1Pin = 1;
 int const float2Pin = 2;
-int const float3Pin = 3;
 int const photoPin = 4;
 
 int const aruco = 13;
@@ -72,7 +74,6 @@ void setup() {
   pinMode(conductPin, INPUT);
   pinMode(float1Pin, INPUT);
   pinMode(float2Pin, INPUT);
-  pinMode(float3Pin, INPUT);
   pinMode(photoPin, INPUT);
   //Set up servo pin
   myservo.attach(servoPin);
@@ -91,7 +92,7 @@ void loop() {
 //ultraTest();
 //servoTest();
 //mainCode();
-  pump(25000,0);
+  mission();
   while(1){}
 }
 
@@ -279,14 +280,6 @@ float calcDist(float x1, float x2, float y1, float y2){
   return float(sqrt(pow((x1-x2),2)+pow((y1-y2),2)))*float(100);
 }
 
-//returns if the water has salt or not
-bool getCond(){
-  float val = analogRead(conductPin);
-  if (val > condTol){
-    return true; //
-  }
-}
-
 //gets location and updates position variables
 void updateLoc(){
   getLoc;
@@ -327,13 +320,7 @@ void go2mission(){
   stopMotors();
 }
 
-void mission(){
-  setServo(0);
-  //do stuff
-  delay(1000);
-  pump(20000, 0);
 
-}
 
 //navigate OSV through obstacles
 void obstacles(){
@@ -496,6 +483,24 @@ void pump(float time, int dir){ //0 dir is in, 1 dir is out
   digitalWrite(pumpIn2,LOW);
 }
 
+void pump(int dir){ //0 dir is in, 1 dir is out
+  if(dir == 0){
+    digitalWrite(pumpIn1,HIGH);
+    digitalWrite(pumpIn2,LOW);
+  }
+  else{
+    digitalWrite(pumpIn1,LOW);
+    digitalWrite(pumpIn2,HIGH);
+  }
+  digitalWrite(pumpIn1,LOW);
+  digitalWrite(pumpIn2,LOW);
+}
+
+void pumpOff(){
+  digitalWrite(pumpIn1,LOW);
+  digitalWrite(pumpIn2,LOW);
+}
+
 void setServo(float finAng){
   float ang = myservo.read();
   finAng = abs(90-finAng);
@@ -506,4 +511,89 @@ void setServo(float finAng){
     delay(15);                       // waits 15ms for the servo to reach the position
   }
   delay(1000);
+}
+
+//returns if the water has salt or not
+int isSalt(){
+  float val = analogRead(conductPin);
+  if (val > condTol){
+    return 1; //
+  }
+  else if(val > waterCondTol){
+    return 0;
+  }
+  else{
+    return -1;
+  }
+}
+
+int getLevel(){
+  float read30 = analogRead(float1Pin);
+  float read40 = analogRead(float2Pin);
+
+  if (read30 > analogTol && read40 > analogTol){
+    return 40;
+  }
+
+  else if (read30 > analogTol && read40 < analogTol){
+    return 30;
+  }
+
+  else if(read30 < analogTol && read40 < analogTol){
+    return 20;
+  }
+  else{
+    return -1;
+  }
+}
+
+bool isPolluted(){
+  float val = analogRead(photoPin);
+  if (val > photoTol){
+    return true; //
+  }
+}
+
+void mission(){
+  setServo(0);
+  delay(1000);
+  int salt = isSalt();
+  if (salt == -1){
+    Enes100.println("Missed water");
+    setServo(90);
+    go2mission();
+    mission();
+  }
+  delay(1000);
+  int lev = getLevel();
+  if(lev == -1){
+    Enes100.println("Not detecting water level");
+  }
+  delay(1000);
+  pump(0);
+  delay(10000);
+  bool pol = isPolluted();
+  delay(20000);
+  pumpOff();
+
+  Enes100.mission(DEPTH, lev);
+  int waterType = salt*pow(2,0)+pol*pow(2, 1); //0 for fresh, unpolluted, 1 for salt, unpolluted, 2 for fresh polluted, 3 for salt unpolluted
+  switch(waterType){
+    case 0:
+      Enes100.mission(WATER_TYPE, FRESH_UNPOLLUTED);
+      break;
+    case 1:
+      Enes100.mission(WATER_TYPE, SALT_UNPOLLUTED);
+      break;
+    case 2:
+      Enes100.mission(WATER_TYPE, FRESH_POLLUTED);
+      break;
+    case 3:
+      Enes100.mission(WATER_TYPE, SALT_POLLUTED);
+      break;
+    default:
+      Enes100.println("Binary statement wrong");
+      break;
+  }
+  
 }
