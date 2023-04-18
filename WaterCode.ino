@@ -37,10 +37,10 @@ int const servoPin = 10;
 int const ultraTrigPin = 11; //Ultrasonic pins
 int const ultraEchoPin = 12;
 //Analog pins
-int const conductPin = 0;
-int const float1Pin = 1;
-int const float2Pin = 2;
-int const photoPin = 4;
+int const conductPin = A0;
+int const float1Pin = A1;
+int const float2Pin = A2;
+int const photoPin = A4;
 
 int const aruco = 12;
 //will need to add LED to diagram and code
@@ -85,7 +85,7 @@ void setup() {
   //bring arm up
   myservo.write(90);
   delay(3000);
-  setServo(90);
+  setServo(89);
 
 }
 
@@ -94,7 +94,16 @@ void loop() {
 //servoTest();
 //mainCode();
 //mission();
-  missionTest();
+//pumpTest();
+missionTest();
+obstacles();
+  go2limbo();
+  //Go under limbo
+  limbo();
+//manualPumpTest();
+// forward();
+// delay(1000);
+// stopMotors();
   while(1){}
 }
 
@@ -123,10 +132,13 @@ void mainCode(){
 }
 
 void servoTest(){
-  setServo(90);
+  setServo(89);
   delay(2000);
-  setServo(0);
+  setServo(45);
+  delay(2000);
+  setServo(1);
   delay(1000);
+  setServo(45);
 }
 
 void ultraTest(){
@@ -147,7 +159,7 @@ void missionTest(){
   setServo(0);
   delay(3000);
   pump(1);
-  delay(5000);
+  delay(15000);
   if (isSalt() == 1){
     Enes100.println("Salt Water");
   }
@@ -168,10 +180,30 @@ void missionTest(){
     Enes100.println("Failure to detect");
   }
   delay(2000);
-    pumpOff();
+  pumpOff();
 
 }
 
+void pumpTest(){
+  setServo(1);
+  delay(1000);
+  pump(0);
+  delay(10000);
+  pumpOff();
+  delay(1000);
+  pump(1);
+  delay(10000);
+  pumpOff();
+}
+
+void manualPumpTest(){
+  setServo(1);
+  digitalWrite(8,HIGH);
+  digitalWrite(9,LOW);
+  delay(5000);
+  digitalWrite(8,LOW);
+  digitalWrite(9,LOW);
+}
 //overloaded straight function that tells OSV to go in direction of x_dest and y_dest
 void straight(float x_dest, float y_dest){ 
   updateLoc(); //get Location and update values
@@ -506,7 +538,7 @@ void limbo(){
   stopMotors();
 }
 
-void pump(float time, int dir){ //1 dir is in, 0 dir is out
+void pump(float time, int dir){ //0 dir is in, 1 dir is out
   if(dir == 1){
     digitalWrite(pumpIn1,HIGH);
     digitalWrite(pumpIn2,LOW);
@@ -520,7 +552,7 @@ void pump(float time, int dir){ //1 dir is in, 0 dir is out
   digitalWrite(pumpIn2,LOW);
 }
 
-void pump(int dir){ //1 dir is in, 0 dir is out
+void pump(int dir){ //0 dir is in, 1 dir is out
   if(dir == 1){
     digitalWrite(pumpIn1,HIGH);
     digitalWrite(pumpIn2,LOW);
@@ -529,8 +561,6 @@ void pump(int dir){ //1 dir is in, 0 dir is out
     digitalWrite(pumpIn1,LOW);
     digitalWrite(pumpIn2,HIGH);
   }
-  digitalWrite(pumpIn1,LOW);
-  digitalWrite(pumpIn2,LOW);
 }
 
 void pumpOff(){
@@ -541,11 +571,20 @@ void pumpOff(){
 void setServo(float finAng){
   float ang = myservo.read();
   finAng = abs(90-finAng);
-  ang = abs(90-ang);
-  for (ang; ang <= finAng; ang += 1) { // goes from 0 degrees to 90 degrees
-    // in steps of 1 degree
-    myservo.write(ang);              // tell servo to go to position in variable 'ang
-    delay(150);                       // waits 15ms for the servo to reach the position
+  //ang = abs(90-ang);
+  if(ang < finAng){
+    for (ang; ang <= finAng; ang += 1) { // goes from 0 degrees to 90 degrees
+      // in steps of 1 degree
+      myservo.write(ang);              // tell servo to go to position in variable 'ang
+      delay(75);                       // waits 15ms for the servo to reach the position
+    }
+  }
+  else if(ang >= finAng){
+    for (ang; ang >= finAng; ang -= 1) { // goes from 90 degrees to 0 degrees
+      // in steps of 1 degree
+      myservo.write(ang);              // tell servo to go to position in variable 'ang
+      delay(75);                       // waits 15ms for the servo to reach the position
+    }
   }
   delay(1000);
 }
