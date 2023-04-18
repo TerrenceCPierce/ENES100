@@ -42,7 +42,7 @@ int const float1Pin = 1;
 int const float2Pin = 2;
 int const photoPin = 4;
 
-int const aruco = 13;
+int const aruco = 12;
 //will need to add LED to diagram and code
 
 float missionX = .5; 
@@ -86,13 +86,15 @@ void setup() {
   myservo.write(90);
   delay(3000);
   setServo(90);
+
 }
 
 void loop() {
 //ultraTest();
 //servoTest();
 //mainCode();
-  mission();
+//mission();
+  missionTest();
   while(1){}
 }
 
@@ -121,7 +123,7 @@ void mainCode(){
 }
 
 void servoTest(){
-   setServo(90);
+  setServo(90);
   delay(2000);
   setServo(0);
   delay(1000);
@@ -133,6 +135,41 @@ void ultraTest(){
     Serial.println(getDist());
     delay(500);
   }
+}
+
+void missionTest(){
+  delay(1000);
+  updateLoc(); //updates location a few times to get rid of incorrect values at start
+  updateLoc();
+  updateLoc();
+  go2mission();
+  delay(1000);
+  setServo(0);
+  delay(3000);
+  pump(1);
+  delay(5000);
+  if (isSalt() == 1){
+    Enes100.println("Salt Water");
+  }
+  else if (isSalt() == 0){
+    Enes100.println("Fresh Water");
+  }
+  else{
+    Enes100.println("Failure to detect");    
+  }
+  delay(2000);
+  if (isPolluted() == 1){
+    Enes100.println("Polluted Water");
+  }
+  else if (isPolluted() == 0){
+    Enes100.println("Unpolluted Water");
+  }
+  else{
+    Enes100.println("Failure to detect");
+  }
+  delay(2000);
+    pumpOff();
+
 }
 
 //overloaded straight function that tells OSV to go in direction of x_dest and y_dest
@@ -469,8 +506,8 @@ void limbo(){
   stopMotors();
 }
 
-void pump(float time, int dir){ //0 dir is in, 1 dir is out
-  if(dir == 0){
+void pump(float time, int dir){ //1 dir is in, 0 dir is out
+  if(dir == 1){
     digitalWrite(pumpIn1,HIGH);
     digitalWrite(pumpIn2,LOW);
   }
@@ -483,8 +520,8 @@ void pump(float time, int dir){ //0 dir is in, 1 dir is out
   digitalWrite(pumpIn2,LOW);
 }
 
-void pump(int dir){ //0 dir is in, 1 dir is out
-  if(dir == 0){
+void pump(int dir){ //1 dir is in, 0 dir is out
+  if(dir == 1){
     digitalWrite(pumpIn1,HIGH);
     digitalWrite(pumpIn2,LOW);
   }
@@ -508,7 +545,7 @@ void setServo(float finAng){
   for (ang; ang <= finAng; ang += 1) { // goes from 0 degrees to 90 degrees
     // in steps of 1 degree
     myservo.write(ang);              // tell servo to go to position in variable 'ang
-    delay(15);                       // waits 15ms for the servo to reach the position
+    delay(150);                       // waits 15ms for the servo to reach the position
   }
   delay(1000);
 }
@@ -573,6 +610,7 @@ void mission(){
   pump(0);
   delay(10000);
   bool pol = isPolluted();
+
   delay(20000);
   pumpOff();
 
