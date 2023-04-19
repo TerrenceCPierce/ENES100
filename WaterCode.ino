@@ -12,11 +12,11 @@ float y;
 float tht;
 
 //global 
-float const tht_tol = .05;
+float const tht_tol = .1;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
-float const distTol = 15;
+float const distTol = 5;
 float const photoTol = 500;
 float const condTol = 600;
 float const waterCondTol = 400;
@@ -83,7 +83,7 @@ void setup() {
 
 
   //bring arm up
-  myservo.write(90);
+  myservo.write(0);
   delay(3000);
   setServo(89);
 
@@ -95,15 +95,31 @@ void loop() {
 //mainCode();
 //mission();
 //pumpTest();
-missionTest();
-obstacles();
+/*
+setServo(0);
+pump(1);
+delay(30000);
+*/
+//missionTest();
+//limbo();
+
+//missionY = 1.5;
+//obstacles();
+
+forward();
+/*
+Enes100.println("Passed obstacles");
+delay(1000);
   go2limbo();
+  Enes100.println("Passed going to limbo");
+delay(1000);
   //Go under limbo
   limbo();
+  Enes100.println("Passed limbo");
+*/
+
 //manualPumpTest();
-// forward();
-// delay(1000);
-// stopMotors();
+
   while(1){}
 }
 
@@ -158,7 +174,7 @@ void missionTest(){
   delay(1000);
   setServo(0);
   delay(3000);
-  pump(1);
+  pump(0);
   delay(15000);
   if (isSalt() == 1){
     Enes100.println("Salt Water");
@@ -204,6 +220,8 @@ void manualPumpTest(){
   digitalWrite(8,LOW);
   digitalWrite(9,LOW);
 }
+
+
 //overloaded straight function that tells OSV to go in direction of x_dest and y_dest
 void straight(float x_dest, float y_dest){ 
   updateLoc(); //get Location and update values
@@ -269,7 +287,7 @@ void turn(float desired_tht){
     }
   
   updateLoc(); //get location and update values
-  //delay(100);
+  delay(50);
   stopMotors(); //stops to check conditions
   delay(200);
   //Enes100.println(tht);
@@ -377,7 +395,7 @@ void go2mission(){
   else if(y > 1){
     missionY = 0.5;    
   }
-
+    Enes100.println("Mission Y val:" + String(y));
   //while the ultrasonic sensor does not detect anything within tolerance and while the calculated distance is far enough away, keep going forward
   while(getDist() > distTol && calcDist(x, missionX, y, missionY) > distTol ){
   //Enes100.print("entered while loop ");
@@ -393,7 +411,8 @@ void go2mission(){
 
 //navigate OSV through obstacles
 void obstacles(){
-  setServo(90); //bring arm up
+  setServo(89); //bring arm up
+  delay(1000);
   turn(0); //turn to face right
   updateLoc(); //get location and update values
   float obsCoord[2] = {0,0}; //initialize obstacle Coordinates to start as x=0 and y=0
@@ -425,7 +444,7 @@ void obstacles(){
         }
       }
     }
-
+    Enes100.println("Distance less than tol");
     //once an obstacle is detected, stop
     stopMotors();
     updateLoc(); //get location and update values
@@ -522,12 +541,13 @@ void go2limbo(){
 //go under limbo
 void limbo(){
   setServo(0); //bring arm down to go through limbo
+  delay(1000);
   turn(0); //turn right
   updateLoc(); //get location and update values
 
   //move forward to the right while distance sensor does not detect the wall or while the x and y values are far from final location
   //this uses the vision system as little as possible since the limbo blocks the camera from getting position values for a small amount of time
-  while(getDist() > distTol && calcDist(x, finalX, y, finalY) > distTol){
+  while(calcDist(x, finalX, y, finalY) > distTol){
     forward(); 
     delay(straightTol);
     stopMotors();
@@ -634,12 +654,14 @@ void mission(){
   setServo(0);
   delay(1000);
   int salt = isSalt();
+  /*
   if (salt == -1){
     Enes100.println("Missed water");
     setServo(90);
     go2mission();
     mission();
   }
+  */
   delay(1000);
   int lev = getLevel();
   if(lev == -1){
