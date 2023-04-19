@@ -103,10 +103,10 @@ delay(30000);
 //missionTest();
 //limbo();
 
-//missionY = 1.5;
-//obstacles();
-
-forward();
+missionY = 1.5;
+obstacles();
+//forward();
+//forward();
 /*
 Enes100.println("Passed obstacles");
 delay(1000);
@@ -428,7 +428,7 @@ void obstacles(){
     turn(0); //turn to face right
 
     //while no obstacle is detected
-    while(getDist() > distTol){
+    while(getDist() > distTol && calcDist(x,y,obs2X,y)>distTol){
       updateLoc(); //get location and update values
       straight(0); // go straight to the right
 
