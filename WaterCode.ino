@@ -17,9 +17,9 @@ float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
 float const distTol = 5;
-float const photoTol = 500;
-float const condTol = 600;
-float const waterCondTol = 400;
+float const photoTol = 60; //Tested on 4/24
+float const condTol = 2;
+float const waterCondTol = 1;
 
 float const pwm = 255;
 int const straightTol = 250; //ms per stop when going straight
@@ -90,36 +90,8 @@ void setup() {
 }
 
 void loop() {
-//ultraTest();
-//servoTest();
-//mainCode();
-//mission();
-//pumpTest();
-/*
-setServo(0);
-pump(1);
-delay(30000);
-*/
-//missionTest();
-//limbo();
-
-missionY = 1.5;
-obstacles();
-//forward();
-//forward();
-/*
-Enes100.println("Passed obstacles");
-delay(1000);
-  go2limbo();
-  Enes100.println("Passed going to limbo");
-delay(1000);
-  //Go under limbo
-  limbo();
-  Enes100.println("Passed limbo");
-*/
-
-//manualPumpTest();
-
+  //missionOnlyTest();
+  pump(0);
   while(1){}
 }
 
@@ -200,6 +172,34 @@ void missionTest(){
 
 }
 
+void missionOnlyTest(){
+  delay(1000);
+  setServo(0);
+  delay(3000);
+  pump(1);
+  delay(15000);
+  if (isSalt() == 1){
+    Enes100.println("Salt Water");
+  }
+  else if (isSalt() == 0){
+    Enes100.println("Fresh Water");
+  }
+  else{
+    Enes100.println("Failure to detect");    
+  }
+  delay(2000);
+  if (isPolluted() == 1){
+    Enes100.println("Polluted Water");
+  }
+  else if (isPolluted() == 0){
+    Enes100.println("Unpolluted Water");
+  }
+  else{
+    Enes100.println("Failure to detect");
+  }
+  delay(2000);
+  pumpOff();
+}
 void pumpTest(){
   setServo(1);
   delay(1000);
@@ -612,6 +612,7 @@ void setServo(float finAng){
 //returns if the water has salt or not
 int isSalt(){
   float val = analogRead(conductPin);
+  Enes100.println(val);
   if (val > condTol){
     return 1; //
   }
@@ -645,8 +646,12 @@ int getLevel(){
 
 bool isPolluted(){
   float val = analogRead(photoPin);
+  Enes100.println(val);
   if (val > photoTol){
     return true; //
+  }
+  else{
+    return false;
   }
 }
 
