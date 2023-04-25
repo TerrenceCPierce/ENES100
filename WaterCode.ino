@@ -46,11 +46,14 @@ int const photoPin = A4;
 int const aruco = 12;
 //will need to add LED to diagram and code
 
-float missionX = .45; 
+float missionX = .42; 
 float missionY = 1.4;
 
 float missionYHigh = 1.4;
 float missionYLow = .4;
+
+float startObsX = .6;
+float startObsY = 1.6;
 
 float obs1X = 1.5;
 
@@ -81,7 +84,16 @@ void setup() {
   pinMode(photoPin, INPUT);
   //Set up servo pin
   myservo.attach(servoPin);
-
+  delay(500);
+  // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
+  Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
+  delay(500);
+  // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
+  Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
+  delay(500);
+  // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
+  Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
+  delay(500);
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
   Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
 
@@ -94,8 +106,8 @@ void setup() {
 }
 
 void loop() {
-  //mainCodeNoPump();
-  ultraTestEnes100();
+  mainCodeNoPump();
+  //ultraTestEnes100();
   while(1){}
 }
 
@@ -477,11 +489,30 @@ void go2mission(){
   stopMotors();
 }
 
+void avoidTank(){
+  setServo(89); //bring arm up
+  //gets out of way of tank
+  reverse();
+  delay(500);
+  turn(0);
+  updateLoc();
+  while(calcDist(x, startObsX, y, y) > destTol ){
+    straight(startObsX, y);
+    updateLoc();
+  }
 
+  while(calcDist(x, x, y, startObsY) > destTol ){
+    straight(x, startObsX);
+    updateLoc();
+  }
+
+  
+}
 
 //navigate OSV through obstacles
 void obstacles(){
-  setServo(89); //bring arm up
+  avoidTank();
+
   delay(1000);
   turn(0); //turn to face right
   updateLoc(); //get location and update values
