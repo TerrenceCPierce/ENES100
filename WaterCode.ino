@@ -46,20 +46,20 @@ int const photoPin = A4;
 int const aruco = 12;
 //will need to add LED to diagram and code
 
-float missionX = .42; 
+float missionX = .415; 
 float missionY = 1.4;
 
 float missionYHigh = 1.4;
 float missionYLow = .4;
 
 float startObsX = .7;
-float startObsY = 1.6;
+float startObsY = 1.5;
 
 float obs1X = 1.5;
 
 float obs2X = 2.6;
 
-float limboX = 3.2;
+float limboX = 3;
 float limboY = 1.5;
 
 float finalX = 3.4;
@@ -101,7 +101,7 @@ void setup() {
   //bring arm up
   myservo.write(0);
   delay(3000);
-  setServo(55);
+  setServo(70);
 
 }
 
@@ -159,7 +159,7 @@ void mainCodeNoPump(){
 }
 
 void servoTest(){
-  setServo(55);
+  setServo(70);
   delay(2000);
   setServo(45);
   delay(2000);
@@ -465,7 +465,7 @@ void updateLoc(){
 
 //goes to the mission site
 void go2mission(){
-  setServo(55);
+  setServo(70);
   delay(100);
   getLoc; //get location
   delay(100);
@@ -496,7 +496,7 @@ void go2mission(){
 }
 
 void avoidTank(){
-  setServo(55); //bring arm up
+  setServo(70); //bring arm up
   //gets out of way of tank
   reverse();
   delay(500);
