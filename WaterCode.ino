@@ -19,8 +19,8 @@ float const analogTol = 2000;
 float const distTol = 10;
 float const destTol = 3;
 float const photoTol = 60; //Tested on 4/24
-float const condTol = 350; //Salt measured at 434 with correct proportions
-float const waterCondTol = 550; //Measured at 608-638
+float const condTol = 350; //Salt measured at 434 with correct proportions, later measured at 565, 568
+float const waterCondTol = 575; //Measured at 608-638
 
 float const pwm = 255;
 int const straightTol = 250; //ms per stop when going straight
@@ -52,7 +52,7 @@ float missionY = 1.4;
 float missionYHigh = 1.4;
 float missionYLow = .4;
 
-float startObsX = .6;
+float startObsX = .7;
 float startObsY = 1.6;
 
 float obs1X = 1.5;
@@ -101,7 +101,7 @@ void setup() {
   //bring arm up
   myservo.write(0);
   delay(3000);
-  setServo(89);
+  setServo(55);
 
 }
 
@@ -159,7 +159,7 @@ void mainCodeNoPump(){
 }
 
 void servoTest(){
-  setServo(89);
+  setServo(55);
   delay(2000);
   setServo(45);
   delay(2000);
@@ -452,14 +452,20 @@ float calcDist(float x1, float x2, float y1, float y2){
 //gets location and updates position variables
 void updateLoc(){
   getLoc;
-  x = xLoc;
-  y = yLoc;
-  tht = thtLoc;
+  if(getLoc == 1){
+    x = xLoc;
+    y = yLoc;
+    tht = thtLoc;
+  }
+  else{
+    delay(200);
+    updateLoc();
+  }
 }
 
 //goes to the mission site
 void go2mission(){
-  setServo(90);
+  setServo(55);
   delay(100);
   getLoc; //get location
   delay(100);
@@ -490,7 +496,7 @@ void go2mission(){
 }
 
 void avoidTank(){
-  setServo(89); //bring arm up
+  setServo(55); //bring arm up
   //gets out of way of tank
   reverse();
   delay(500);
@@ -502,7 +508,7 @@ void avoidTank(){
   }
 
   while(calcDist(x, x, y, startObsY) > destTol ){
-    straight(x, startObsX);
+    straight(x, startObsY);
     updateLoc();
   }
 
