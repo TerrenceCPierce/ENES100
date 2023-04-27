@@ -17,13 +17,14 @@ float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
 float const distTol = 10;
-float const destTol = 3;
+float const destTol = 4;
 float const photoTol = 60; //Tested on 4/24
 float const condTol = 350; //Salt measured at 434 with correct proportions, later measured at 565, 568
 float const waterCondTol = 575; //Measured at 608-638
+int const distNum = 10; //number of calls to determine accurate distance
 
 float const pwm = 255;
-int const straightTol = 250; //ms per stop when going straight
+int const straightTol = 150; //ms per stop when going straight
 float const obsHeight = .45; //meters
 //Digital pins
 int const wifiTXPin = 2; //wifi module pins
@@ -53,6 +54,7 @@ float missionYHigh = 1.4;
 float missionYLow = .4;
 
 float startObsX = .7;
+//eventually add two of these
 float startObsY = 1.5;
 
 float obs1X = 1.5;
@@ -84,23 +86,23 @@ void setup() {
   pinMode(photoPin, INPUT);
   //Set up servo pin
   myservo.attach(servoPin);
-  delay(500);
+  delay(100);
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
   Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
-  delay(500);
+  delay(100);
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
   Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
-  delay(500);
+  delay(100);
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
   Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
-  delay(500);
+  delay(100);
   // Team Name, Mission Type, Marker ID, TX Pin, RX Pin
   Enes100.begin("Elephante", WATER, aruco , wifiTXPin, wifiRXPin);
 
 
   //bring arm up
   myservo.write(0);
-  delay(3000);
+  delay(1000);
   setServo(70);
 
 }
@@ -143,14 +145,19 @@ void mainCodeNoPump(){
   delay(3000);
   
   go2mission();
+  Enes100.println("Arrived at mission");
   delay(250);
   //Mission Code without pumping
+  Enes100.println("Entering mission function");
   missionOnlyNoPumpTest();
   //Traverse Obstacles
+  Enes100.println("Entering obstacles function");
   obstacles();
   //Go to limbo
+  Enes100.println("Going to limbo");
   go2limbo();
   //Go under limbo
+  Enes100.println("Going under limbo");
   limbo();
 
   //Celebration
@@ -178,8 +185,8 @@ void ultraTest(){
 
 void ultraTestEnes100(){
   while(1){
-    Enes100.println(getDist());
-    delay(500);
+    Enes100.println(getTrueDist());
+    delay(1000);
   }
 }
 
@@ -442,8 +449,20 @@ float getDist(){
   float duration = pulseIn(ultraEchoPin, HIGH);
   // Calculating the distance
   float distance = duration * 0.034 / 2;
+  delay(10);
   return distance;
 }
+
+float getTrueDist(){
+  float* distArr = new float[distNum];
+  for(int i = 0; i < distNum; i++){
+    distArr[i]= getDist();
+  }
+  float median = findMedian(distArr, distNum);
+  delete distArr;
+  return median; 
+}
+
 //calculates distance between two points in cm
 float calcDist(float x1, float x2, float y1, float y2){
   return float(sqrt(pow((x1-x2),2)+pow((y1-y2),2)))*float(100);
@@ -458,13 +477,22 @@ void updateLoc(){
     tht = thtLoc;
   }
   else{
-    delay(200);
-    updateLoc();
+    Enes100.println("Can't see aruco");
+    if(x < limboX && millis() > 6000){
+      delay(200);
+      double randAngle = ((double)rand()) / ((double)RAND_MAX) * 2*pi - pi;
+      turn(randAngle);
+      delay(100);
+      forward();
+      delay(200);
+      updateLoc();
+    }
   }
 }
 
 //goes to the mission site
 void go2mission(){
+  Enes100.println("Going to mission");
   setServo(70);
   delay(100);
   getLoc; //get location
@@ -485,11 +513,12 @@ void go2mission(){
   }
     Enes100.println("Mission Y val:" + String(missionY));
   //while the ultrasonic sensor does not detect anything within tolerance and while the calculated distance is far enough away, keep going forward
-  while(getDist() > distTol && calcDist(x, missionX, y, missionY) > destTol ){
+  while(getTrueDist() > distTol && calcDist(x, missionX, y, missionY) > destTol ){
   //Enes100.print("entered while loop ");
   //Enes100.print("Mission Y:" + String(missionY));
   straight(missionX, missionY);
   updateLoc();
+  stopMotors();
   }
   
   stopMotors();
@@ -535,11 +564,13 @@ void obstacles(){
     turn(0); //turn to face right
 
     //while no obstacle is detected
-    while(getDist() > distTol && calcDist(x,y,obs2X,y)>destTol){
+    while(getTrueDist() > distTol && calcDist(x,y,obs2X,y)>destTol){
       updateLoc(); //get location and update values
       straight(0); // go straight to the right
+      stopMotors();
 
-      if(getDist() < distTol){ //if an obstacle is detected
+      if(getTrueDist() < distTol){ //if an obstacle is detected
+        stopMotors();
         updateLoc(); //get location and update values
 
         if(x < obs1X){ //if the obstacle detected is in the first column
@@ -581,9 +612,10 @@ void obstacles(){
     Enes100.println("At second column of obstacles");
     
     //while no obstacles are detected and while not past the second column of obstacles
-    while(getDist() > distTol & x < obs2X +.3){
+    while(getTrueDist() > distTol && x < obs2X +.3){
       updateLoc(); //get location and update values
       straight(0); //move right
+      stopMotors();
     }
 
     //once an obstacle is detected or past the second column, stop
@@ -654,7 +686,7 @@ void limbo(){
 
   //move forward to the right while distance sensor does not detect the wall or while the x and y values are far from final location
   //this uses the vision system as little as possible since the limbo blocks the camera from getting position values for a small amount of time
-  while(calcDist(x, finalX, y, finalY) > destTol){
+  while(calcDist(x, finalX, y, finalY) > destTol && x <= finalX){
     forward(); 
     delay(straightTol);
     stopMotors();
@@ -810,3 +842,27 @@ void mission(){
   }
   
 }
+
+float findMedian(float arr[], int size){
+    //bubble sort from https://www.geeksforgeeks.org/bubble-sort/
+    int i, j;
+    for (i = 0; i < size - 1; i++){
+        // Last i elements are already
+        // in place
+        for (j = 0; j < size - i - 1; j++){
+            if (arr[j] > arr[j + 1]){
+                float temp = arr[j];
+                arr[j] = arr[j+1];
+                arr[j+1] = temp;
+            }
+        }
+    }
+    
+    if(size % (2)){
+      return (arr[(int)(size/2)] + arr[(int)(size/2+1)])/2;
+    }
+    else{
+      return arr[(int)(size/2)];
+    }
+}
+
