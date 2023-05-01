@@ -16,8 +16,8 @@ float const tht_tol = .1;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
-float const distTol = 15;
-float const distMissionTol = 4;
+float const distTol = 17;
+float const distMissionTol = 6;
 float const destTol = 4;
 float const photoTol = 60; //Tested on 4/24
 float const condTol = 350; //Salt measured at 434 with correct proportions, later measured at 565, 568
@@ -58,12 +58,12 @@ float startObsX = .7;
 //eventually add two of these
 float startObsY = 1.5;
 
-float obs1X = 1.5;
+float obs1X = 1.4;
 
 float obs2X = 2.6;
 
 float limboX = 3;
-float limboY = 1.5;
+float limboY = 1.7;
 
 float finalX = 3.4;
 float finalY = 1.5;
