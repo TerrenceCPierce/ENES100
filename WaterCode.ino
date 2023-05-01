@@ -16,7 +16,7 @@ float const tht_tol = .1;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
-float const distTol = 10;
+float const distTol = 1;
 float const destTol = 4;
 float const photoTol = 60; //Tested on 4/24
 float const condTol = 350; //Salt measured at 434 with correct proportions, later measured at 565, 568
@@ -108,8 +108,8 @@ void setup() {
 }
 
 void loop() {
-  mainCodeNoPump();
-  //ultraTestEnes100();
+  //mainCodeNoPump();
+  ultraTestEnes100();
   while(1){}
 }
 
@@ -142,7 +142,7 @@ void mainCodeNoPump(){
   updateLoc(); //updates location a few times to get rid of incorrect values at start
   updateLoc();
   updateLoc();
-  delay(3000);
+  delay(1000);
   
   go2mission();
   Enes100.println("Arrived at mission");
@@ -460,6 +460,7 @@ float getTrueDist(){
   }
   float median = findMedian(distArr, distNum);
   delete distArr;
+  Enes100.println(median);
   return median; 
 }
 
@@ -478,13 +479,15 @@ void updateLoc(){
   }
   else{
     Enes100.println("Can't see aruco");
-    if(x < limboX && millis() > 6000){
-      delay(200);
+    if(x < limboX && millis() > 8000){
+      delay(1000);
       double randAngle = ((double)rand()) / ((double)RAND_MAX) * 2*pi - pi;
       turn(randAngle);
       delay(100);
       forward();
-      delay(200);
+      delay(100);
+      stopMotors();
+      delay(100);
       updateLoc();
     }
   }
@@ -519,6 +522,7 @@ void go2mission(){
   straight(missionX, missionY);
   updateLoc();
   stopMotors();
+  delay(100);
   }
   
   stopMotors();
@@ -529,6 +533,8 @@ void avoidTank(){
   //gets out of way of tank
   reverse();
   delay(500);
+  stopMotors();
+  delay(100);
   turn(0);
   updateLoc();
   while(calcDist(x, startObsX, y, y) > destTol ){
@@ -536,10 +542,16 @@ void avoidTank(){
     updateLoc();
   }
 
+  if(missionY > 1)
+    startObsY = 1.5;
+  else
+    startObsY = .35;
+  
   while(calcDist(x, x, y, startObsY) > destTol ){
     straight(x, startObsY);
     updateLoc();
   }
+  stopMotors();
 
   
 }
@@ -568,6 +580,7 @@ void obstacles(){
       updateLoc(); //get location and update values
       straight(0); // go straight to the right
       stopMotors();
+      delay(100);
 
       if(getTrueDist() < distTol){ //if an obstacle is detected
         stopMotors();
@@ -616,6 +629,7 @@ void obstacles(){
       updateLoc(); //get location and update values
       straight(0); //move right
       stopMotors();
+      delay(100);
     }
 
     //once an obstacle is detected or past the second column, stop
@@ -754,7 +768,7 @@ void setServo(float finAng){
 int isSalt(){
   float val = analogRead(conductPin);
   Enes100.println(val);
-  if (val > waterCondTol){
+  if (val < waterCondTol ){
     return 0; //
   }
   else if(val > condTol){
@@ -865,4 +879,3 @@ float findMedian(float arr[], int size){
       return arr[(int)(size/2)];
     }
 }
-
