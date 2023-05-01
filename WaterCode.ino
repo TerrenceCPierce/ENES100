@@ -16,7 +16,8 @@ float const tht_tol = .1;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
-float const distTol = 1;
+float const distTol = 15;
+float const distMissionTol = 4;
 float const destTol = 4;
 float const photoTol = 60; //Tested on 4/24
 float const condTol = 350; //Salt measured at 434 with correct proportions, later measured at 565, 568
@@ -108,8 +109,8 @@ void setup() {
 }
 
 void loop() {
-  //mainCodeNoPump();
-  ultraTestEnes100();
+  mainCodeNoPump();
+  //ultraTestEnes100();
   while(1){}
 }
 
@@ -516,7 +517,7 @@ void go2mission(){
   }
     Enes100.println("Mission Y val:" + String(missionY));
   //while the ultrasonic sensor does not detect anything within tolerance and while the calculated distance is far enough away, keep going forward
-  while(getTrueDist() > distTol && calcDist(x, missionX, y, missionY) > destTol ){
+  while(getTrueDist() > distMissionTol && calcDist(x, missionX, y, missionY) > destTol ){
   //Enes100.print("entered while loop ");
   //Enes100.print("Mission Y:" + String(missionY));
   straight(missionX, missionY);
