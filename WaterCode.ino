@@ -17,11 +17,13 @@ float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
 float const distTol = 17;
-float const distMissionTol = 6;
+float const distMissionTol = 8;
 float const destTol = 4;
-float const photoTol = 60; //Tested on 4/24
-float const condTol = 350; //Salt measured at 434 with correct proportions, later measured at 565, 568
-float const waterCondTol = 575; //Measured at 608-638
+float const photoTol = 90; //Tested on 5/1, unpolluted, 56 62 53, 67, 76, polluted 125 113 109 110 104 110
+//changes based on pollution, change methods, 593 595, 593, 602, 588 for polluted fresh
+// polluted salt 512, 519
+float const condTol = 585; //Salt measured at 434 with correct proportions, later measured at 565, 568, 550, 560, 525, 535
+float const waterCondTol = 700; //Measured at 608-644, upper threshold, higher is air
 int const distNum = 10; //number of calls to determine accurate distance
 
 float const pwm = 255;
@@ -57,6 +59,10 @@ float missionYLow = .4;
 float startObsX = .7;
 //eventually add two of these
 float startObsY = 1.5;
+
+float startObsY1 = 1.5;
+float startObsY2 = .55;
+
 
 float obs1X = 1.4;
 
@@ -103,23 +109,32 @@ void setup() {
 
   //bring arm up
   myservo.write(0);
-  delay(1000);
+  delay(500);
   setServo(70);
+
+  //For testing Salt ONLY
+  
+
+  
 
 }
 
 void loop() {
-  mainCodeNoPump();
+  //mainCodeNoPump();
   //ultraTestEnes100();
+  //mainCode();
+  //missionOnlyTest();
+  //delay(500);
+  pumpOut();
   while(1){}
 }
 
 void mainCode(){
-  delay(1000);
+  delay(750);
   updateLoc(); //updates location a few times to get rid of incorrect values at start
   updateLoc();
   updateLoc();
-  delay(3000);
+  delay(750);
   
   go2mission();
   delay(250);
@@ -472,13 +487,19 @@ float calcDist(float x1, float x2, float y1, float y2){
 
 //gets location and updates position variables
 void updateLoc(){
-  getLoc;
   if(getLoc == 1){
     x = xLoc;
     y = yLoc;
     tht = thtLoc;
   }
   else{
+    delay(50);
+    if(getLoc == 1){
+      x = xLoc;
+      y = yLoc;
+      tht = thtLoc;
+    }
+    else{
     Enes100.println("Can't see aruco");
     if(x < limboX && millis() > 8000){
       delay(1000);
@@ -491,6 +512,7 @@ void updateLoc(){
       delay(100);
       updateLoc();
     }
+  }
   }
 }
 
@@ -544,9 +566,9 @@ void avoidTank(){
   }
 
   if(missionY > 1)
-    startObsY = 1.5;
+    startObsY = startObsY1;
   else
-    startObsY = .35;
+    startObsY = startObsY2;
   
   while(calcDist(x, x, y, startObsY) > destTol ){
     straight(x, startObsY);
@@ -769,11 +791,11 @@ void setServo(float finAng){
 int isSalt(){
   float val = analogRead(conductPin);
   Enes100.println(val);
-  if (val < waterCondTol ){
-    return 0; //
+  if (val < condTol){
+    return 1; //
   }
-  else if(val > condTol){
-    return 1;
+  else if(val < waterCondTol){
+    return 0;
   }
   else{
     return -1;
@@ -829,15 +851,15 @@ void mission(){
     Enes100.println("Not detecting water level");
   }
   delay(1000);
-  pump(0);
+  pump(1);
   delay(10000);
   bool pol = isPolluted();
 
-  delay(20000);
+  delay(10000);
   pumpOff();
 
   Enes100.mission(DEPTH, lev);
-  int waterType = salt*pow(2,0)+pol*pow(2, 1); //0 for fresh, unpolluted, 1 for salt, unpolluted, 2 for fresh polluted, 3 for salt unpolluted
+  int waterType = salt*1+pol*2; //0 for fresh, unpolluted, 1 for salt, unpolluted, 2 for fresh polluted, 3 for salt unpolluted
   switch(waterType){
     case 0:
       Enes100.mission(WATER_TYPE, FRESH_UNPOLLUTED);
@@ -879,4 +901,12 @@ float findMedian(float arr[], int size){
     else{
       return arr[(int)(size/2)];
     }
+}
+
+void pumpOut(){
+  delay(500);
+  setServo(0);
+  delay(500);
+  pump(0);
+  delay(99999999);
 }
