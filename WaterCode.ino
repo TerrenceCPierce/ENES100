@@ -22,13 +22,15 @@ float const destTol = 4;
 float const photoTol = 90; //Tested on 5/1, unpolluted, 56 62 53, 67, 76, polluted 125 113 109 110 104 110
 //changes based on pollution, change methods, 593 595, 593, 602, 588 for polluted fresh
 // polluted salt 512, 519
-float const condTol = 585; //Salt measured at 434 with correct proportions, later measured at 565, 568, 550, 560, 525, 535
-float const waterCondTol = 700; //Measured at 608-644, upper threshold, higher is air
+float const polCondTol = 555;
+float const unpolCondTol = 585; //Salt measured at 434 with correct proportions, later measured at 565, 568, 550, 560, 525, 535
+float condTol = 5000;
+float const waterCondTol = 750; //Measured at 608-644, upper threshold, higher is air,  702
 int const distNum = 10; //number of calls to determine accurate distance
 
 float const pwm = 255;
 int const straightTol = 150; //ms per stop when going straight
-float const obsHeight = .45; //meters
+float const obsHeight = .48; //meters
 //Digital pins
 int const wifiTXPin = 2; //wifi module pins
 int const wifiRXPin = 3;
@@ -111,20 +113,19 @@ void setup() {
   myservo.write(0);
   delay(500);
   setServo(70);
-
-  //For testing Salt ONLY
-  
-
-  
-
 }
 
 void loop() {
   //mainCodeNoPump();
   //ultraTestEnes100();
-  //mainCode();
+  //forward();
   //missionOnlyTest();
   //delay(500);
+  //pumpOut();
+  //servoTest();
+  //mainCode();
+  //mission();
+  //delay(1000);
   pumpOut();
   while(1){}
 }
@@ -791,6 +792,9 @@ void setServo(float finAng){
 int isSalt(){
   float val = analogRead(conductPin);
   Enes100.println(val);
+  if(condTol == 5000 && val > waterCondTol)
+    return -1;
+     
   if (val < condTol){
     return 1; //
   }
@@ -833,32 +837,19 @@ bool isPolluted(){
   }
 }
 
-void mission(){
-  setServo(0);
-  delay(1000);
-  int salt = isSalt();
-  /*
-  if (salt == -1){
-    Enes100.println("Missed water");
-    setServo(90);
-    go2mission();
-    mission();
-  }
-  */
-  delay(1000);
-  int lev = getLevel();
-  if(lev == -1){
-    Enes100.println("Not detecting water level");
-  }
-  delay(1000);
-  pump(1);
-  delay(10000);
+void isSaltAndPolluted(){
   bool pol = isPolluted();
-
-  delay(10000);
-  pumpOff();
-
-  Enes100.mission(DEPTH, lev);
+  delay(100);
+  if(pol)
+    condTol = polCondTol;
+  else
+    condTol = unpolCondTol;
+  
+  int salt = isSalt();
+  if(salt == -1)
+    Enes100.println("Salt measuring invalid");
+    
+  delay(100);
   int waterType = salt*1+pol*2; //0 for fresh, unpolluted, 1 for salt, unpolluted, 2 for fresh polluted, 3 for salt unpolluted
   switch(waterType){
     case 0:
@@ -875,10 +866,38 @@ void mission(){
       break;
     default:
       Enes100.println("Binary statement wrong");
-      break;
+      break;  
   }
-  
 }
+
+void mission(){
+  setServo(0);
+  int salt = isSalt();
+  delay(1000);
+  if (salt == -1){
+    Enes100.println("Missed water");
+    setServo(90);
+    go2mission();
+    mission();
+  }
+
+  delay(1000);
+  int lev = getLevel();
+  if(lev == -1){
+    Enes100.println("Not detecting water level");
+  }
+  delay(1000);
+  pump(1);
+  delay(10000);
+  isSaltAndPolluted();
+
+  delay(10000);
+  pumpOff();
+
+  Enes100.mission(DEPTH, lev);
+
+}
+
 
 float findMedian(float arr[], int size){
     //bubble sort from https://www.geeksforgeeks.org/bubble-sort/
