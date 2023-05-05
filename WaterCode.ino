@@ -12,7 +12,7 @@ float y;
 float tht;
 
 //global 
-float const tht_tol = .1;
+float const tht_tol = .08;
 float const pi = 3.1415;
 float const turnTimeTol = 1;
 float const analogTol = 2000;
@@ -20,6 +20,8 @@ float const distTol = 17;
 float const distMissionTol = 8;
 float const destTol = 4;
 float const photoTol = 90; //Tested on 5/1, unpolluted, 56 62 53, 67, 76, polluted 125 113 109 110 104 110
+int const turnDelay = 35;
+int const servoDelay = 25;
 //changes based on pollution, change methods, 593 595, 593, 602, 588 for polluted fresh
 // polluted salt 512, 519
 float const polCondTol = 555;
@@ -27,6 +29,8 @@ float const unpolCondTol = 585; //Salt measured at 434 with correct proportions,
 float condTol = 5000;
 float const waterCondTol = 750; //Measured at 608-644, upper threshold, higher is air,  702
 int const distNum = 10; //number of calls to determine accurate distance
+
+float const USHeight = 10;
 
 float const pwm = 255;
 int const straightTol = 150; //ms per stop when going straight
@@ -48,6 +52,9 @@ int const conductPin = A0;
 int const float1Pin = A1;
 int const float2Pin = A2;
 int const photoPin = A4;
+
+int const ultraDepthTrigPin = 17;
+int const ultraDepthEchoPin = 19;
 
 int const aruco = 12;
 //will need to add LED to diagram and code
@@ -89,6 +96,8 @@ void setup() {
   pinMode(pumpIn2, OUTPUT);
   pinMode(ultraTrigPin, OUTPUT);
   pinMode(ultraEchoPin, INPUT); 
+  pinMode(ultraDepthTrigPin, OUTPUT);
+  pinMode(ultraDepthEchoPin, INPUT); 
   pinMode(conductPin, INPUT);
   pinMode(float1Pin, INPUT);
   pinMode(float2Pin, INPUT);
@@ -111,8 +120,9 @@ void setup() {
 
   //bring arm up
   myservo.write(0);
-  delay(500);
+  delay(100);
   setServo(70);
+  Enes100.println("Exiting Setup");
 }
 
 void loop() {
@@ -123,19 +133,23 @@ void loop() {
   //delay(500);
   //pumpOut();
   //servoTest();
-  //mainCode();
+  mainCode();
   //mission();
   //delay(1000);
-  pumpOut();
+  //pumpOut();
+  //setServo(0);
+  //Enes100.println(USgetLevel());
+  //delay(1000);
+
   while(1){}
 }
 
 void mainCode(){
-  delay(750);
+  delay(250);
   updateLoc(); //updates location a few times to get rid of incorrect values at start
   updateLoc();
   updateLoc();
-  delay(750);
+  delay(250);
   
   go2mission();
   delay(250);
@@ -149,6 +163,12 @@ void mainCode(){
   limbo();
 
   //Celebration
+
+
+  delay(10000);
+  Enes100.println("Pumping out");
+  pumpOut();
+
   Enes100.println("Finished Loop");
   while(1){}
   
@@ -393,9 +413,9 @@ void turn(float desired_tht){
     }
   
   updateLoc(); //get location and update values
-  delay(10);
+  delay(turnDelay);
   stopMotors(); //stops to check conditions
-  delay(200);
+  delay(100);
   //Enes100.println(tht);
   }
   // angle is now within tolerance
@@ -584,7 +604,7 @@ void avoidTank(){
 void obstacles(){
   avoidTank();
 
-  delay(1000);
+  delay(500);
   turn(0); //turn to face right
   updateLoc(); //get location and update values
   float obsCoord[2] = {0,0}; //initialize obstacle Coordinates to start as x=0 and y=0
@@ -774,17 +794,17 @@ void setServo(float finAng){
     for (ang; ang <= finAng; ang += 1) { // goes from 0 degrees to 90 degrees
       // in steps of 1 degree
       myservo.write(ang);              // tell servo to go to position in variable 'ang
-      delay(75);                       // waits 15ms for the servo to reach the position
+      delay(servoDelay);                       // waits 15ms for the servo to reach the position
     }
   }
   else if(ang >= finAng){
     for (ang; ang >= finAng; ang -= 1) { // goes from 90 degrees to 0 degrees
       // in steps of 1 degree
       myservo.write(ang);              // tell servo to go to position in variable 'ang
-      delay(75);                       // waits 15ms for the servo to reach the position
+      delay(servoDelay);                       // waits 15ms for the servo to reach the position
     }
   }
-  delay(1000);
+  delay(200);
   myservo.detach();
 }
 
@@ -806,6 +826,7 @@ int isSalt(){
   }
 }
 
+//uses float swtiches
 int getLevel(){
   float read30 = analogRead(float1Pin);
   float read40 = analogRead(float2Pin);
@@ -824,6 +845,52 @@ int getLevel(){
   else{
     return -1;
   }
+}
+
+int USgetLevel(){
+  float depthDist = getTrueDepthDist();
+  if (depthDist > USHeight-2.3){ //7.7
+    return 20; //reading 7.5-7.9
+  }
+
+  else if (depthDist > USHeight-3.8){ //6.2
+    return 30; //reading 6.34-7
+  }
+
+  else if(depthDist > USHeight-6){ //4
+    return 40; //reading 5.5- 6
+  }
+  else{
+    return -1;
+  }
+}
+
+//gets distance from ultrasonic sensor in cm
+float getDepthDist(){
+  //code from https://howtomechatronics.com/tutorials/arduino/ultrasonic-sensor-hc-sr04/
+  digitalWrite(ultraDepthTrigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin on HIGH state for 10 micro seconds
+  digitalWrite(ultraDepthTrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ultraDepthTrigPin, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  float duration = pulseIn(ultraDepthEchoPin, HIGH);
+  // Calculating the distance
+  float distance = duration * 0.034 / 2;
+  delay(10);
+  return distance;
+}
+
+float getTrueDepthDist(){
+  float* distArr = new float[distNum];
+  for(int i = 0; i < distNum; i++){
+    distArr[i]= getDepthDist();
+  }
+  float median = findMedian(distArr, distNum);
+  delete distArr;
+  Enes100.println(median);
+  return median; 
 }
 
 bool isPolluted(){
@@ -874,7 +941,7 @@ void mission(){
   setServo(0);
   int salt = isSalt();
   delay(1000);
-  if (salt == -1){
+  if (salt == -1 && millis() < 90000){
     Enes100.println("Missed water");
     setServo(90);
     go2mission();
@@ -882,7 +949,7 @@ void mission(){
   }
 
   delay(1000);
-  int lev = getLevel();
+  int lev = USgetLevel();
   if(lev == -1){
     Enes100.println("Not detecting water level");
   }
@@ -928,4 +995,11 @@ void pumpOut(){
   delay(500);
   pump(0);
   delay(99999999);
+}
+
+void printTime(){
+  int time = millis()/1000;
+  int min = time/60;
+  int sec = time%60;
+  Enes100.println("Time of OSV: " + (String) min + ":"+ (String)sec);
 }
