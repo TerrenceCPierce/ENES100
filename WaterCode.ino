@@ -140,9 +140,10 @@ void loop() {
   //pumpOut();
   //setServo(0);
   //Enes100.println(USgetLevel());
+  //updateLoc();
   //delay(1000);
 
-  while(1){}
+  //while(1){}
 }
 
 void mainCode(){
@@ -660,11 +661,18 @@ void obstacles(){
       }
 
       //if made it to the last row, just move right
-      if(y <= missionY+1.8*(obsHeight*des_tht/(pi/2))){ //last row
+      if(y <= missionY+1.9*(obsHeight*des_tht/(pi/2)) && missionY > 1){ //last row
+        Enes100.println("Last row");
         while(calcDist(x,obs1X+.3,y,y)>destTol){
           straight(0);
         }
       }
+      else if(y >= missionY+1.9*(obsHeight*des_tht/(pi/2)) && missionY < 1){
+        Enes100.println("Last row");
+        while(calcDist(x,obs1X+.3,y,y)>destTol){
+          straight(0);
+        }
+      }      
     }
   }
 
@@ -974,7 +982,7 @@ void mission(){
   }
   delay(1000);
   pump(1);
-  delay(10000);
+  delay(15000);
   isSaltAndPolluted();
   Enes100.mission(DEPTH, lev);
   delay(10000);
