@@ -64,6 +64,7 @@ float missionY = 1.4;
 
 float missionYHigh = 1.4;
 float missionYLow = .4;
+float missionXLow = .49;
 
 float startObsX = .7;
 //eventually add two of these
@@ -78,9 +79,9 @@ float obs1X = 1.4;
 float obs2X = 2.6;
 
 float limboX = 3;
-float limboY = 1.7;
+float limboY = 1.5;
 
-float finalX = 3.4;
+float finalX = 3.6;
 float finalY = 1.5;
 
 Servo myservo; // initializes servo object
@@ -164,9 +165,12 @@ void mainCode(){
 
   //Celebration
 
-
+  printTime();
   delay(10000);
   Enes100.println("Pumping out");
+  setServo(90);
+  delay(2000);
+  setServo(0);
   pumpOut();
 
   Enes100.println("Finished Loop");
@@ -556,8 +560,10 @@ void go2mission(){
     missionY = missionYHigh;
   }
   else if(y > 1){
-    missionY = missionYLow;    
+    missionY = missionYLow;   
+    missionX = missionXLow; 
   }
+    Enes100.println("Mission X val:" + String(missionX));
     Enes100.println("Mission Y val:" + String(missionY));
   //while the ultrasonic sensor does not detect anything within tolerance and while the calculated distance is far enough away, keep going forward
   while(getTrueDist() > distMissionTol && calcDist(x, missionX, y, missionY) > destTol ){
@@ -737,9 +743,10 @@ void go2limbo(){
 
 //go under limbo
 void limbo(){
-  setServo(0); //bring arm down to go through limbo
-  delay(1000);
   turn(0); //turn right
+  delay(1000);
+  setServo(0); //bring arm down to go through limbo
+
   updateLoc(); //get location and update values
 
   //move forward to the right while distance sensor does not detect the wall or while the x and y values are far from final location
@@ -849,7 +856,8 @@ int getLevel(){
 
 int USgetLevel(){
   float depthDist = getTrueDepthDist();
-  if (depthDist > USHeight-2.3){ //7.7
+  Enes100.println(depthDist);
+  if (depthDist > USHeight-2.6){ //7.4
     return 20; //reading 7.5-7.9
   }
 
@@ -944,7 +952,18 @@ void mission(){
   if (salt == -1 && millis() < 90000){
     Enes100.println("Missed water");
     setServo(90);
-    go2mission();
+    reverse();
+    delay(500);
+    stopMotors();
+    while(getTrueDist() > distMissionTol && calcDist(x, missionX, y, missionY) > destTol ){
+      //Enes100.print("entered while loop ");
+      //Enes100.print("Mission Y:" + String(missionY));
+      straight(missionX, missionY);
+      updateLoc();
+      stopMotors();
+      delay(100);
+    }
+    stopMotors();
     mission();
   }
 
@@ -957,12 +976,9 @@ void mission(){
   pump(1);
   delay(10000);
   isSaltAndPolluted();
-
+  Enes100.mission(DEPTH, lev);
   delay(10000);
   pumpOff();
-
-  Enes100.mission(DEPTH, lev);
-
 }
 
 
