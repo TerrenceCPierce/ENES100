@@ -143,7 +143,7 @@ void loop() {
   //updateLoc();
   //delay(1000);
 
-  //while(1){}
+  while(1){}
 }
 
 void mainCode(){
@@ -643,6 +643,9 @@ void obstacles(){
           Enes100.println("Detected Obstacle");
           Enes100.println(String(obsCoord[0]));
           Enes100.println(String(obsCoord[1]));
+          reverse();
+          delay(100);
+          stopMotors();
         }
       }
     }
@@ -661,13 +664,13 @@ void obstacles(){
       }
 
       //if made it to the last row, just move right
-      if(y <= missionY+1.9*(obsHeight*des_tht/(pi/2)) && missionY > 1){ //last row
+      if(y <= missionY+1.8*(obsHeight*des_tht/(pi/2)) && missionY > 1){ //last row
         Enes100.println("Last row");
         while(calcDist(x,obs1X+.3,y,y)>destTol){
           straight(0);
         }
       }
-      else if(y >= missionY+1.9*(obsHeight*des_tht/(pi/2)) && missionY < 1){
+      else if(y >= missionY+1.8*(obsHeight*des_tht/(pi/2)) && missionY < 1){
         Enes100.println("Last row");
         while(calcDist(x,obs1X+.3,y,y)>destTol){
           straight(0);
@@ -974,19 +977,21 @@ void mission(){
     stopMotors();
     mission();
   }
-
-  delay(1000);
-  int lev = USgetLevel();
-  if(lev == -1){
-    Enes100.println("Not detecting water level");
+  else{
+    Enes100.println("Detected Water");
+    delay(1000);
+    int lev = USgetLevel();
+    if(lev == -1){
+      Enes100.println("Not detecting water level");
+    }
+    delay(1000);
+    pump(1);
+    delay(15000);
+    isSaltAndPolluted();
+    Enes100.mission(DEPTH, lev);
+    delay(10000);
+    pumpOff();
   }
-  delay(1000);
-  pump(1);
-  delay(15000);
-  isSaltAndPolluted();
-  Enes100.mission(DEPTH, lev);
-  delay(10000);
-  pumpOff();
 }
 
 
