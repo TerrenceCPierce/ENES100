@@ -985,10 +985,10 @@ void mission(){
       Enes100.println("Not detecting water level");
     }
     delay(1000);
+    Enes100.mission(DEPTH, lev);
     pump(1);
     delay(15000);
     isSaltAndPolluted();
-    Enes100.mission(DEPTH, lev);
     delay(10000);
     pumpOff();
   }
